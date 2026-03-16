@@ -1,0 +1,7 @@
+{
+  "name": "ProxyPool Pro",
+  "description": "高性能代理池管理与监控系统，提供实时节点监控、全球分布地图及详细的代理列表管理。",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
