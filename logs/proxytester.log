@@ -1,0 +1,459 @@
+2026-04-12 18:38:52 [INFO] services.proxy_workflow_service: Starting automated workflow (refresh_external_sources=True, include_deadpool_sources=True, max_workers=150, save_to_db=True)
+2026-04-12 18:38:52 [INFO] services.proxy_workflow_service: Refreshing external proxy seeds via Deadpool
+2026-04-12 18:38:52 [INFO] collectors.deadpool_runner: Starting Deadpool seed refresh: C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\fir.py
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool seed refresh finished in 5.64s with code 0
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout: ==================================================
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout: [*] ͳ����Ϣ:
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout:     - ��Դ����: 12
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout:     - �ɹ�Դ����: 0
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout:     - �ܺ�ʱ: 5.08 ��
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout:     - HTTP��������: 0
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout:     - SOCKS5��������: 0
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout: ==================================================
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout: [-] �����б� 'http.txt' Ϊ�գ����豣�档
+2026-04-12 18:38:58 [INFO] collectors.deadpool_runner: Deadpool stdout: [-] �����б� 'git.txt' Ϊ�գ����豣�档
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Deadpool refresh summary: {'success': True, 'status': 'ok', 'returnCode': 0, 'stdoutTail': ["[!] jetkai/proxy-list-socks5: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] hookzof/socks5_list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] proxifly/free-proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] fate0/proxylist: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] gfpcom/free-proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] ProxyScraper/ProxyScraper: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] monosans/proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] zloi-user/hideip.me: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] get_free_proxy: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] get_free_proxy: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", '==================================================', '[*] ͳ����Ϣ:', '    - ��Դ����: 12', '    - �ɹ�Դ����: 0', '    - �ܺ�ʱ: 5.08 ��', '    - HTTP��������: 0', '    - SOCKS5��������: 0', '==================================================', "[-] �����б� 'http.txt' Ϊ�գ����豣�档", "[-] �����б� 'git.txt' Ϊ�գ����豣�档"], 'stderrTail': [], 'elapsedSeconds': 5.64, 'projectDir': 'C:\\MyProjects\\ProxyTester\\new\\proxyxy\\Deadpool-proxypool1.5\\Deadpool-proxypool1.5'}
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Collecting proxies from configured sources
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Loading source lastData from C:\MyProjects\ProxyTester\collectors\data\lastData.txt
+2026-04-12 18:38:58 [INFO] collectors.file_collector: Collected 8050 proxies from file C:\MyProjects\ProxyTester\collectors\data\lastData.txt (invalid lines: 0)
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Loading source deadpool_lastData from C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\lastData.txt
+2026-04-12 18:38:58 [INFO] collectors.file_collector: Collected 8050 proxies from file C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\lastData.txt (invalid lines: 6)
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Loading source deadpool_http from C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\http.txt
+2026-04-12 18:38:58 [INFO] collectors.file_collector: Collected 3022 proxies from file C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\http.txt (invalid lines: 0)
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Loading source deadpool_git from C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\git.txt
+2026-04-12 18:38:58 [INFO] collectors.file_collector: Collected 2083 proxies from file C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\git.txt (invalid lines: 1)
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Finished source collection with 8050 unique proxies
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Writing canonical merged dataset to C:\MyProjects\ProxyTester\collectors\data\lastData.txt
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Canonical dataset written: 8050 proxies -> C:\MyProjects\ProxyTester\collectors\data\lastData.txt
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Transforming canonical dataset into JSON C:\MyProjects\ProxyTester\collectors\data\lastData.json
+2026-04-12 18:38:58 [INFO] collectors.transformers.last_data_to_json: Generated JSON dataset C:\MyProjects\ProxyTester\collectors\data\lastData.json from C:\MyProjects\ProxyTester\collectors\data\lastData.txt with 8050 records (invalid lines: 0)
+2026-04-12 18:38:58 [INFO] services.proxy_workflow_service: Running full check on 8050 merged proxies
+2026-04-12 18:38:58 [INFO] services.proxy_check_service: Preparing full proxy check (count=8050, max_workers=150, save_to_db=True)
+2026-04-12 18:38:58 [INFO] services.proxy_check_service: Creating MySQL repository for persistence
+2026-04-12 18:38:58 [INFO] storage.mysql.proxy_repository: Opened MySQL connection for proxy repository
+2026-04-12 18:38:58 [INFO] scheduler.check_pipeline: Starting check batch for 8050 proxies with max_workers=150
+2026-04-12 18:39:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 50/8050
+2026-04-12 18:39:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 100/8050
+2026-04-12 18:39:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 150/8050
+2026-04-12 18:39:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 200/8050
+2026-04-12 18:39:07 [INFO] scheduler.check_pipeline: Completed proxy checks: 250/8050
+2026-04-12 18:39:07 [INFO] scheduler.check_pipeline: Completed proxy checks: 300/8050
+2026-04-12 18:39:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 350/8050
+2026-04-12 18:39:13 [INFO] scheduler.check_pipeline: Completed proxy checks: 400/8050
+2026-04-12 18:39:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 450/8050
+2026-04-12 18:39:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 500/8050
+2026-04-12 18:39:19 [INFO] scheduler.check_pipeline: Completed proxy checks: 550/8050
+2026-04-12 18:39:22 [INFO] scheduler.check_pipeline: Completed proxy checks: 600/8050
+2026-04-12 18:39:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 650/8050
+2026-04-12 18:39:28 [INFO] scheduler.check_pipeline: Completed proxy checks: 700/8050
+2026-04-12 18:39:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 750/8050
+2026-04-12 18:39:35 [INFO] scheduler.check_pipeline: Completed proxy checks: 800/8050
+2026-04-12 18:39:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 850/8050
+2026-04-12 18:39:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 900/8050
+2026-04-12 18:39:47 [INFO] scheduler.check_pipeline: Completed proxy checks: 950/8050
+2026-04-12 18:39:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 1000/8050
+2026-04-12 18:39:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 1050/8050
+2026-04-12 18:39:59 [INFO] scheduler.check_pipeline: Completed proxy checks: 1100/8050
+2026-04-12 18:40:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 1150/8050
+2026-04-12 18:40:09 [INFO] scheduler.check_pipeline: Completed proxy checks: 1200/8050
+2026-04-12 18:40:14 [INFO] scheduler.check_pipeline: Completed proxy checks: 1250/8050
+2026-04-12 18:40:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 1300/8050
+2026-04-12 18:40:24 [INFO] scheduler.check_pipeline: Completed proxy checks: 1350/8050
+2026-04-12 18:40:29 [INFO] scheduler.check_pipeline: Completed proxy checks: 1400/8050
+2026-04-12 18:40:33 [INFO] scheduler.check_pipeline: Completed proxy checks: 1450/8050
+2026-04-12 18:40:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 1500/8050
+2026-04-12 18:40:40 [INFO] scheduler.check_pipeline: Completed proxy checks: 1550/8050
+2026-04-12 18:40:45 [INFO] scheduler.check_pipeline: Completed proxy checks: 1600/8050
+2026-04-12 18:40:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 1650/8050
+2026-04-12 18:40:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 1700/8050
+2026-04-12 18:41:02 [INFO] scheduler.check_pipeline: Completed proxy checks: 1750/8050
+2026-04-12 18:41:08 [INFO] scheduler.check_pipeline: Completed proxy checks: 1800/8050
+2026-04-12 18:41:14 [INFO] scheduler.check_pipeline: Completed proxy checks: 1850/8050
+2026-04-12 18:41:19 [INFO] scheduler.check_pipeline: Completed proxy checks: 1900/8050
+2026-04-12 18:41:24 [INFO] scheduler.check_pipeline: Completed proxy checks: 1950/8050
+2026-04-12 18:41:29 [INFO] scheduler.check_pipeline: Completed proxy checks: 2000/8050
+2026-04-12 18:41:35 [INFO] scheduler.check_pipeline: Completed proxy checks: 2050/8050
+2026-04-12 18:41:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 2100/8050
+2026-04-12 18:41:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 2150/8050
+2026-04-12 18:41:57 [INFO] scheduler.check_pipeline: Completed proxy checks: 2200/8050
+2026-04-12 18:42:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 2250/8050
+2026-04-12 18:42:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 2300/8050
+2026-04-12 18:42:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 2350/8050
+2026-04-12 18:42:19 [INFO] scheduler.check_pipeline: Completed proxy checks: 2400/8050
+2026-04-12 18:42:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 2450/8050
+2026-04-12 18:42:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 2500/8050
+2026-04-12 18:42:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 2550/8050
+2026-04-12 18:42:37 [INFO] scheduler.check_pipeline: Completed proxy checks: 2600/8050
+2026-04-12 18:42:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 2650/8050
+2026-04-12 18:42:47 [INFO] scheduler.check_pipeline: Completed proxy checks: 2700/8050
+2026-04-12 18:42:52 [INFO] scheduler.check_pipeline: Completed proxy checks: 2750/8050
+2026-04-12 18:42:57 [INFO] scheduler.check_pipeline: Completed proxy checks: 2800/8050
+2026-04-12 18:43:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 2850/8050
+2026-04-12 18:43:05 [INFO] scheduler.check_pipeline: Completed proxy checks: 2900/8050
+2026-04-12 18:43:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 2950/8050
+2026-04-12 18:43:14 [INFO] scheduler.check_pipeline: Completed proxy checks: 3000/8050
+2026-04-12 18:43:18 [INFO] scheduler.check_pipeline: Completed proxy checks: 3050/8050
+2026-04-12 18:43:22 [INFO] scheduler.check_pipeline: Completed proxy checks: 3100/8050
+2026-04-12 18:43:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 3150/8050
+2026-04-12 18:43:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 3200/8050
+2026-04-12 18:43:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 3250/8050
+2026-04-12 18:43:40 [INFO] scheduler.check_pipeline: Completed proxy checks: 3300/8050
+2026-04-12 18:43:45 [INFO] scheduler.check_pipeline: Completed proxy checks: 3350/8050
+2026-04-12 18:43:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 3400/8050
+2026-04-12 18:43:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 3450/8050
+2026-04-12 18:44:00 [INFO] scheduler.check_pipeline: Completed proxy checks: 3500/8050
+2026-04-12 18:44:05 [INFO] scheduler.check_pipeline: Completed proxy checks: 3550/8050
+2026-04-12 18:44:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 3600/8050
+2026-04-12 18:44:17 [INFO] scheduler.check_pipeline: Completed proxy checks: 3650/8050
+2026-04-12 18:44:21 [INFO] scheduler.check_pipeline: Completed proxy checks: 3700/8050
+2026-04-12 18:44:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 3750/8050
+2026-04-12 18:44:30 [INFO] scheduler.check_pipeline: Completed proxy checks: 3800/8050
+2026-04-12 18:44:34 [INFO] scheduler.check_pipeline: Completed proxy checks: 3850/8050
+2026-04-12 18:44:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 3900/8050
+2026-04-12 18:44:44 [INFO] scheduler.check_pipeline: Completed proxy checks: 3950/8050
+2026-04-12 18:44:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 4000/8050
+2026-04-12 18:44:57 [INFO] scheduler.check_pipeline: Completed proxy checks: 4050/8050
+2026-04-12 18:45:02 [INFO] scheduler.check_pipeline: Completed proxy checks: 4100/8050
+2026-04-12 18:45:08 [INFO] scheduler.check_pipeline: Completed proxy checks: 4150/8050
+2026-04-12 18:45:13 [INFO] scheduler.check_pipeline: Completed proxy checks: 4200/8050
+2026-04-12 18:45:18 [INFO] scheduler.check_pipeline: Completed proxy checks: 4250/8050
+2026-04-12 18:45:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 4300/8050
+2026-04-12 18:45:28 [INFO] scheduler.check_pipeline: Completed proxy checks: 4350/8050
+2026-04-12 18:45:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 4400/8050
+2026-04-12 18:45:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 4450/8050
+2026-04-12 18:45:40 [INFO] scheduler.check_pipeline: Completed proxy checks: 4500/8050
+2026-04-12 18:45:44 [INFO] scheduler.check_pipeline: Completed proxy checks: 4550/8050
+2026-04-12 18:45:48 [INFO] scheduler.check_pipeline: Completed proxy checks: 4600/8050
+2026-04-12 18:45:52 [INFO] scheduler.check_pipeline: Completed proxy checks: 4650/8050
+2026-04-12 18:45:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 4700/8050
+2026-04-12 18:45:59 [INFO] scheduler.check_pipeline: Completed proxy checks: 4750/8050
+2026-04-12 18:46:02 [INFO] scheduler.check_pipeline: Completed proxy checks: 4800/8050
+2026-04-12 18:46:06 [INFO] scheduler.check_pipeline: Completed proxy checks: 4850/8050
+2026-04-12 18:46:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 4900/8050
+2026-04-12 18:46:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 4950/8050
+2026-04-12 18:46:19 [INFO] scheduler.check_pipeline: Completed proxy checks: 5000/8050
+2026-04-12 18:46:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 5050/8050
+2026-04-12 18:46:28 [INFO] scheduler.check_pipeline: Completed proxy checks: 5100/8050
+2026-04-12 18:46:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 5150/8050
+2026-04-12 18:46:35 [INFO] scheduler.check_pipeline: Completed proxy checks: 5200/8050
+2026-04-12 18:46:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 5250/8050
+2026-04-12 18:46:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 5300/8050
+2026-04-12 18:46:47 [INFO] scheduler.check_pipeline: Completed proxy checks: 5350/8050
+2026-04-12 18:46:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 5400/8050
+2026-04-12 18:46:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 5450/8050
+2026-04-12 18:46:59 [INFO] scheduler.check_pipeline: Completed proxy checks: 5500/8050
+2026-04-12 18:47:02 [INFO] scheduler.check_pipeline: Completed proxy checks: 5550/8050
+2026-04-12 18:47:07 [INFO] scheduler.check_pipeline: Completed proxy checks: 5600/8050
+2026-04-12 18:47:11 [INFO] scheduler.check_pipeline: Completed proxy checks: 5650/8050
+2026-04-12 18:47:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 5700/8050
+2026-04-12 18:47:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 5750/8050
+2026-04-12 18:47:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 5800/8050
+2026-04-12 18:47:30 [INFO] scheduler.check_pipeline: Completed proxy checks: 5850/8050
+2026-04-12 18:47:34 [INFO] scheduler.check_pipeline: Completed proxy checks: 5900/8050
+2026-04-12 18:47:38 [INFO] scheduler.check_pipeline: Completed proxy checks: 5950/8050
+2026-04-12 18:47:42 [INFO] scheduler.check_pipeline: Completed proxy checks: 6000/8050
+2026-04-12 18:47:46 [INFO] scheduler.check_pipeline: Completed proxy checks: 6050/8050
+2026-04-12 18:47:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 6100/8050
+2026-04-12 18:47:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 6150/8050
+2026-04-12 18:47:58 [INFO] scheduler.check_pipeline: Completed proxy checks: 6200/8050
+2026-04-12 18:48:03 [INFO] scheduler.check_pipeline: Completed proxy checks: 6250/8050
+2026-04-12 18:48:09 [INFO] scheduler.check_pipeline: Completed proxy checks: 6300/8050
+2026-04-12 18:48:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 6350/8050
+2026-04-12 18:48:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 6400/8050
+2026-04-12 18:48:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 6450/8050
+2026-04-12 18:48:30 [INFO] scheduler.check_pipeline: Completed proxy checks: 6500/8050
+2026-04-12 18:48:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 6550/8050
+2026-04-12 18:48:42 [INFO] scheduler.check_pipeline: Completed proxy checks: 6600/8050
+2026-04-12 18:48:46 [INFO] scheduler.check_pipeline: Completed proxy checks: 6650/8050
+2026-04-12 18:48:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 6700/8050
+2026-04-12 18:48:55 [INFO] scheduler.check_pipeline: Completed proxy checks: 6750/8050
+2026-04-12 18:48:59 [INFO] scheduler.check_pipeline: Completed proxy checks: 6800/8050
+2026-04-12 18:49:03 [INFO] scheduler.check_pipeline: Completed proxy checks: 6850/8050
+2026-04-12 18:49:08 [INFO] scheduler.check_pipeline: Completed proxy checks: 6900/8050
+2026-04-12 18:49:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 6950/8050
+2026-04-12 18:49:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 7000/8050
+2026-04-12 18:49:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 7050/8050
+2026-04-12 18:49:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 7100/8050
+2026-04-12 18:49:28 [INFO] scheduler.check_pipeline: Completed proxy checks: 7150/8050
+2026-04-12 18:49:33 [INFO] scheduler.check_pipeline: Completed proxy checks: 7200/8050
+2026-04-12 18:49:38 [INFO] scheduler.check_pipeline: Completed proxy checks: 7250/8050
+2026-04-12 18:49:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 7300/8050
+2026-04-12 18:49:47 [INFO] scheduler.check_pipeline: Completed proxy checks: 7350/8050
+2026-04-12 18:49:52 [INFO] scheduler.check_pipeline: Completed proxy checks: 7400/8050
+2026-04-12 18:49:57 [INFO] scheduler.check_pipeline: Completed proxy checks: 7450/8050
+2026-04-12 18:50:02 [INFO] scheduler.check_pipeline: Completed proxy checks: 7500/8050
+2026-04-12 18:50:07 [INFO] scheduler.check_pipeline: Completed proxy checks: 7550/8050
+2026-04-12 18:50:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 7600/8050
+2026-04-12 18:50:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 7650/8050
+2026-04-12 18:50:22 [INFO] scheduler.check_pipeline: Completed proxy checks: 7700/8050
+2026-04-12 18:50:26 [INFO] scheduler.check_pipeline: Completed proxy checks: 7750/8050
+2026-04-12 18:50:31 [INFO] scheduler.check_pipeline: Completed proxy checks: 7800/8050
+2026-04-12 18:50:35 [INFO] scheduler.check_pipeline: Completed proxy checks: 7850/8050
+2026-04-12 18:50:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 7900/8050
+2026-04-12 18:50:44 [INFO] scheduler.check_pipeline: Completed proxy checks: 7950/8050
+2026-04-12 18:51:24 [INFO] scheduler.check_pipeline: Completed proxy checks: 8000/8050
+2026-04-12 18:53:58 [INFO] scheduler.check_pipeline: Completed proxy checks: 8050/8050
+2026-04-12 18:53:58 [INFO] scheduler.check_pipeline: Persisting 1029 alive proxies to the repository serially
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 50/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 100/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 150/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 200/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 250/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 300/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 350/1029
+2026-04-12 18:53:59 [INFO] scheduler.check_pipeline: Persisted proxies: 400/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 450/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 500/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 550/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 600/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 650/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 700/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 750/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 800/1029
+2026-04-12 18:54:00 [INFO] scheduler.check_pipeline: Persisted proxies: 850/1029
+2026-04-12 18:54:01 [INFO] scheduler.check_pipeline: Persisted proxies: 900/1029
+2026-04-12 18:54:01 [INFO] scheduler.check_pipeline: Persisted proxies: 950/1029
+2026-04-12 18:54:01 [INFO] scheduler.check_pipeline: Persisted proxies: 1000/1029
+2026-04-12 18:54:01 [INFO] scheduler.check_pipeline: Persisted proxies: 1029/1029
+2026-04-12 18:54:01 [INFO] scheduler.check_pipeline: Finished check batch in 902.66s (contexts=8050 alive=1029)
+2026-04-12 18:54:01 [INFO] services.proxy_check_service: Full proxy check completed: 1029/8050 proxies alive
+2026-04-12 18:54:01 [INFO] services.proxy_check_service: Closing MySQL repository
+2026-04-12 18:54:01 [INFO] storage.mysql.proxy_repository: Closing MySQL connection for proxy repository
+2026-04-12 18:54:01 [INFO] services.proxy_workflow_service: Automated workflow completed in 908.64s (sources=4 collected=8050 alive=1029)
+2026-04-12 19:27:32 [INFO] services.proxy_workflow_service: Starting automated workflow (refresh_external_sources=True, include_deadpool_sources=True, max_workers=150, save_to_db=True)
+2026-04-12 19:27:32 [INFO] services.proxy_workflow_service: Refreshing external proxy seeds via Deadpool
+2026-04-12 19:27:32 [INFO] collectors.deadpool_runner: Starting Deadpool seed refresh: C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\fir.py
+2026-04-12 19:27:54 [INFO] services.proxy_workflow_service: Starting automated workflow (refresh_external_sources=True, include_deadpool_sources=True, max_workers=150, save_to_db=True)
+2026-04-12 19:27:54 [INFO] services.proxy_workflow_service: Refreshing external proxy seeds via Deadpool
+2026-04-12 19:27:54 [INFO] collectors.deadpool_runner: Starting Deadpool seed refresh: C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\fir.py
+2026-04-12 19:28:06 [INFO] services.proxy_workflow_service: Starting automated workflow (refresh_external_sources=True, include_deadpool_sources=True, max_workers=150, save_to_db=True)
+2026-04-12 19:28:06 [INFO] services.proxy_workflow_service: Refreshing external proxy seeds via Deadpool
+2026-04-12 19:28:06 [INFO] collectors.deadpool_runner: Starting Deadpool seed refresh: C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\fir.py
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool seed refresh finished in 5.81s with code 0
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout: ==================================================
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout: [*] ͳ����Ϣ:
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout:     - ��Դ����: 12
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout:     - �ɹ�Դ����: 0
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout:     - �ܺ�ʱ: 5.32 ��
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout:     - HTTP��������: 0
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout:     - SOCKS5��������: 0
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout: ==================================================
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout: [-] �����б� 'http.txt' Ϊ�գ����豣�档
+2026-04-12 19:28:12 [INFO] collectors.deadpool_runner: Deadpool stdout: [-] �����б� 'git.txt' Ϊ�գ����豣�档
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Deadpool refresh summary: {'success': True, 'status': 'ok', 'returnCode': 0, 'stdoutTail': ["[!] TheSpeedX/PROXY-List: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] gfpcom/free-proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] jetkai/proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] fate0/proxylist: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] monosans/proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] ProxyScraper/ProxyScraper: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] zloi-user/hideip.me: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] get_free_proxy: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] get_free_proxy: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", "[!] proxifly/free-proxy-list: �������ʧ�� - 'gbk' codec can't encode character '\\u2717' in pos", '==================================================', '[*] ͳ����Ϣ:', '    - ��Դ����: 12', '    - �ɹ�Դ����: 0', '    - �ܺ�ʱ: 5.32 ��', '    - HTTP��������: 0', '    - SOCKS5��������: 0', '==================================================', "[-] �����б� 'http.txt' Ϊ�գ����豣�档", "[-] �����б� 'git.txt' Ϊ�գ����豣�档"], 'stderrTail': [], 'elapsedSeconds': 5.81, 'projectDir': 'C:\\MyProjects\\ProxyTester\\new\\proxyxy\\Deadpool-proxypool1.5\\Deadpool-proxypool1.5'}
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Collecting proxies from configured sources
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Loading source lastData from C:\MyProjects\ProxyTester\collectors\data\lastData.txt
+2026-04-12 19:28:12 [INFO] collectors.file_collector: Collected 8050 proxies from file C:\MyProjects\ProxyTester\collectors\data\lastData.txt (invalid lines: 0)
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Loading source deadpool_lastData from C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\lastData.txt
+2026-04-12 19:28:12 [INFO] collectors.file_collector: Collected 8050 proxies from file C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\lastData.txt (invalid lines: 6)
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Loading source deadpool_http from C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\http.txt
+2026-04-12 19:28:12 [INFO] collectors.file_collector: Collected 3022 proxies from file C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\http.txt (invalid lines: 0)
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Loading source deadpool_git from C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\git.txt
+2026-04-12 19:28:12 [INFO] collectors.file_collector: Collected 2083 proxies from file C:\MyProjects\ProxyTester\new\proxyxy\Deadpool-proxypool1.5\Deadpool-proxypool1.5\git.txt (invalid lines: 1)
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Finished source collection with 8050 unique proxies
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Writing canonical merged dataset to C:\MyProjects\ProxyTester\collectors\data\lastData.txt
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Canonical dataset written: 8050 proxies -> C:\MyProjects\ProxyTester\collectors\data\lastData.txt
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Transforming canonical dataset into JSON C:\MyProjects\ProxyTester\collectors\data\lastData.json
+2026-04-12 19:28:12 [INFO] collectors.transformers.last_data_to_json: Generated JSON dataset C:\MyProjects\ProxyTester\collectors\data\lastData.json from C:\MyProjects\ProxyTester\collectors\data\lastData.txt with 8050 records (invalid lines: 0)
+2026-04-12 19:28:12 [INFO] services.proxy_workflow_service: Running full check on 8050 merged proxies
+2026-04-12 19:28:12 [INFO] services.proxy_check_service: Preparing full proxy check (count=8050, max_workers=150, save_to_db=True)
+2026-04-12 19:28:12 [INFO] services.proxy_check_service: Creating MySQL repository for persistence
+2026-04-12 19:28:12 [INFO] storage.mysql.proxy_repository: Opened MySQL connection for proxy repository
+2026-04-12 19:28:12 [INFO] scheduler.check_pipeline: Starting check batch for 8050 proxies with max_workers=150
+2026-04-12 19:28:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 50/8050
+2026-04-12 19:28:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 100/8050
+2026-04-12 19:28:18 [INFO] scheduler.check_pipeline: Completed proxy checks: 150/8050
+2026-04-12 19:28:18 [INFO] scheduler.check_pipeline: Completed proxy checks: 200/8050
+2026-04-12 19:28:21 [INFO] scheduler.check_pipeline: Completed proxy checks: 250/8050
+2026-04-12 19:28:21 [INFO] scheduler.check_pipeline: Completed proxy checks: 300/8050
+2026-04-12 19:28:24 [INFO] scheduler.check_pipeline: Completed proxy checks: 350/8050
+2026-04-12 19:28:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 400/8050
+2026-04-12 19:28:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 450/8050
+2026-04-12 19:28:30 [INFO] scheduler.check_pipeline: Completed proxy checks: 500/8050
+2026-04-12 19:28:33 [INFO] scheduler.check_pipeline: Completed proxy checks: 550/8050
+2026-04-12 19:28:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 600/8050
+2026-04-12 19:28:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 650/8050
+2026-04-12 19:28:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 700/8050
+2026-04-12 19:28:49 [INFO] scheduler.check_pipeline: Completed proxy checks: 750/8050
+2026-04-12 19:28:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 800/8050
+2026-04-12 19:29:00 [INFO] scheduler.check_pipeline: Completed proxy checks: 850/8050
+2026-04-12 19:29:05 [INFO] scheduler.check_pipeline: Completed proxy checks: 900/8050
+2026-04-12 19:29:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 950/8050
+2026-04-12 19:29:14 [INFO] scheduler.check_pipeline: Completed proxy checks: 1000/8050
+2026-04-12 19:29:19 [INFO] scheduler.check_pipeline: Completed proxy checks: 1050/8050
+2026-04-12 19:29:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 1100/8050
+2026-04-12 19:29:28 [INFO] scheduler.check_pipeline: Completed proxy checks: 1150/8050
+2026-04-12 19:29:33 [INFO] scheduler.check_pipeline: Completed proxy checks: 1200/8050
+2026-04-12 19:29:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 1250/8050
+2026-04-12 19:29:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 1300/8050
+2026-04-12 19:29:48 [INFO] scheduler.check_pipeline: Completed proxy checks: 1350/8050
+2026-04-12 19:29:53 [INFO] scheduler.check_pipeline: Completed proxy checks: 1400/8050
+2026-04-12 19:29:58 [INFO] scheduler.check_pipeline: Completed proxy checks: 1450/8050
+2026-04-12 19:30:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 1500/8050
+2026-04-12 19:30:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 1550/8050
+2026-04-12 19:30:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 1600/8050
+2026-04-12 19:30:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 1650/8050
+2026-04-12 19:30:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 1700/8050
+2026-04-12 19:30:30 [INFO] scheduler.check_pipeline: Completed proxy checks: 1750/8050
+2026-04-12 19:30:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 1800/8050
+2026-04-12 19:30:41 [INFO] scheduler.check_pipeline: Completed proxy checks: 1850/8050
+2026-04-12 19:30:46 [INFO] scheduler.check_pipeline: Completed proxy checks: 1900/8050
+2026-04-12 19:30:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 1950/8050
+2026-04-12 19:30:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 2000/8050
+2026-04-12 19:30:58 [INFO] scheduler.check_pipeline: Completed proxy checks: 2050/8050
+2026-04-12 19:31:03 [INFO] scheduler.check_pipeline: Completed proxy checks: 2100/8050
+2026-04-12 19:31:07 [INFO] scheduler.check_pipeline: Completed proxy checks: 2150/8050
+2026-04-12 19:31:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 2200/8050
+2026-04-12 19:31:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 2250/8050
+2026-04-12 19:31:22 [INFO] scheduler.check_pipeline: Completed proxy checks: 2300/8050
+2026-04-12 19:31:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 2350/8050
+2026-04-12 19:31:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 2400/8050
+2026-04-12 19:31:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 2450/8050
+2026-04-12 19:31:41 [INFO] scheduler.check_pipeline: Completed proxy checks: 2500/8050
+2026-04-12 19:31:45 [INFO] scheduler.check_pipeline: Completed proxy checks: 2550/8050
+2026-04-12 19:31:49 [INFO] scheduler.check_pipeline: Completed proxy checks: 2600/8050
+2026-04-12 19:31:53 [INFO] scheduler.check_pipeline: Completed proxy checks: 2650/8050
+2026-04-12 19:31:57 [INFO] scheduler.check_pipeline: Completed proxy checks: 2700/8050
+2026-04-12 19:32:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 2750/8050
+2026-04-12 19:32:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 2800/8050
+2026-04-12 19:32:08 [INFO] scheduler.check_pipeline: Completed proxy checks: 2850/8050
+2026-04-12 19:32:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 2900/8050
+2026-04-12 19:32:17 [INFO] scheduler.check_pipeline: Completed proxy checks: 2950/8050
+2026-04-12 19:32:21 [INFO] scheduler.check_pipeline: Completed proxy checks: 3000/8050
+2026-04-12 19:32:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 3050/8050
+2026-04-12 19:32:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 3100/8050
+2026-04-12 19:32:36 [INFO] scheduler.check_pipeline: Completed proxy checks: 3150/8050
+2026-04-12 19:32:40 [INFO] scheduler.check_pipeline: Completed proxy checks: 3200/8050
+2026-04-12 19:32:44 [INFO] scheduler.check_pipeline: Completed proxy checks: 3250/8050
+2026-04-12 19:32:49 [INFO] scheduler.check_pipeline: Completed proxy checks: 3300/8050
+2026-04-12 19:32:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 3350/8050
+2026-04-12 19:32:59 [INFO] scheduler.check_pipeline: Completed proxy checks: 3400/8050
+2026-04-12 19:33:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 3450/8050
+2026-04-12 19:33:09 [INFO] scheduler.check_pipeline: Completed proxy checks: 3500/8050
+2026-04-12 19:33:13 [INFO] scheduler.check_pipeline: Completed proxy checks: 3550/8050
+2026-04-12 19:33:18 [INFO] scheduler.check_pipeline: Completed proxy checks: 3600/8050
+2026-04-12 19:33:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 3650/8050
+2026-04-12 19:33:28 [INFO] scheduler.check_pipeline: Completed proxy checks: 3700/8050
+2026-04-12 19:33:34 [INFO] scheduler.check_pipeline: Completed proxy checks: 3750/8050
+2026-04-12 19:33:40 [INFO] scheduler.check_pipeline: Completed proxy checks: 3800/8050
+2026-04-12 19:33:45 [INFO] scheduler.check_pipeline: Completed proxy checks: 3850/8050
+2026-04-12 19:33:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 3900/8050
+2026-04-12 19:33:55 [INFO] scheduler.check_pipeline: Completed proxy checks: 3950/8050
+2026-04-12 19:34:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 4000/8050
+2026-04-12 19:34:08 [INFO] scheduler.check_pipeline: Completed proxy checks: 4050/8050
+2026-04-12 19:34:13 [INFO] scheduler.check_pipeline: Completed proxy checks: 4100/8050
+2026-04-12 19:34:18 [INFO] scheduler.check_pipeline: Completed proxy checks: 4150/8050
+2026-04-12 19:34:23 [INFO] scheduler.check_pipeline: Completed proxy checks: 4200/8050
+2026-04-12 19:34:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 4250/8050
+2026-04-12 19:34:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 4300/8050
+2026-04-12 19:34:37 [INFO] scheduler.check_pipeline: Completed proxy checks: 4350/8050
+2026-04-12 19:34:43 [INFO] scheduler.check_pipeline: Completed proxy checks: 4400/8050
+2026-04-12 19:34:47 [INFO] scheduler.check_pipeline: Completed proxy checks: 4450/8050
+2026-04-12 19:34:52 [INFO] scheduler.check_pipeline: Completed proxy checks: 4500/8050
+2026-04-12 19:34:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 4550/8050
+2026-04-12 19:35:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 4600/8050
+2026-04-12 19:35:05 [INFO] scheduler.check_pipeline: Completed proxy checks: 4650/8050
+2026-04-12 19:35:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 4700/8050
+2026-04-12 19:35:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 4750/8050
+2026-04-12 19:35:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 4800/8050
+2026-04-12 19:35:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 4850/8050
+2026-04-12 19:35:31 [INFO] scheduler.check_pipeline: Completed proxy checks: 4900/8050
+2026-04-12 19:35:35 [INFO] scheduler.check_pipeline: Completed proxy checks: 4950/8050
+2026-04-12 19:35:40 [INFO] scheduler.check_pipeline: Completed proxy checks: 5000/8050
+2026-04-12 19:35:46 [INFO] scheduler.check_pipeline: Completed proxy checks: 5050/8050
+2026-04-12 19:35:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 5100/8050
+2026-04-12 19:35:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 5150/8050
+2026-04-12 19:36:00 [INFO] scheduler.check_pipeline: Completed proxy checks: 5200/8050
+2026-04-12 19:36:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 5250/8050
+2026-04-12 19:36:08 [INFO] scheduler.check_pipeline: Completed proxy checks: 5300/8050
+2026-04-12 19:36:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 5350/8050
+2026-04-12 19:36:17 [INFO] scheduler.check_pipeline: Completed proxy checks: 5400/8050
+2026-04-12 19:36:21 [INFO] scheduler.check_pipeline: Completed proxy checks: 5450/8050
+2026-04-12 19:36:27 [INFO] scheduler.check_pipeline: Completed proxy checks: 5500/8050
+2026-04-12 19:36:32 [INFO] scheduler.check_pipeline: Completed proxy checks: 5550/8050
+2026-04-12 19:36:38 [INFO] scheduler.check_pipeline: Completed proxy checks: 5600/8050
+2026-04-12 19:36:44 [INFO] scheduler.check_pipeline: Completed proxy checks: 5650/8050
+2026-04-12 19:36:50 [INFO] scheduler.check_pipeline: Completed proxy checks: 5700/8050
+2026-04-12 19:36:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 5750/8050
+2026-04-12 19:37:00 [INFO] scheduler.check_pipeline: Completed proxy checks: 5800/8050
+2026-04-12 19:37:05 [INFO] scheduler.check_pipeline: Completed proxy checks: 5850/8050
+2026-04-12 19:37:09 [INFO] scheduler.check_pipeline: Completed proxy checks: 5900/8050
+2026-04-12 19:37:13 [INFO] scheduler.check_pipeline: Completed proxy checks: 5950/8050
+2026-04-12 19:37:17 [INFO] scheduler.check_pipeline: Completed proxy checks: 6000/8050
+2026-04-12 19:37:21 [INFO] scheduler.check_pipeline: Completed proxy checks: 6050/8050
+2026-04-12 19:37:26 [INFO] scheduler.check_pipeline: Completed proxy checks: 6100/8050
+2026-04-12 19:37:31 [INFO] scheduler.check_pipeline: Completed proxy checks: 6150/8050
+2026-04-12 19:37:37 [INFO] scheduler.check_pipeline: Completed proxy checks: 6200/8050
+2026-04-12 19:37:45 [INFO] scheduler.check_pipeline: Completed proxy checks: 6250/8050
+2026-04-12 19:37:52 [INFO] scheduler.check_pipeline: Completed proxy checks: 6300/8050
+2026-04-12 19:37:58 [INFO] scheduler.check_pipeline: Completed proxy checks: 6350/8050
+2026-04-12 19:38:02 [INFO] scheduler.check_pipeline: Completed proxy checks: 6400/8050
+2026-04-12 19:38:07 [INFO] scheduler.check_pipeline: Completed proxy checks: 6450/8050
+2026-04-12 19:38:12 [INFO] scheduler.check_pipeline: Completed proxy checks: 6500/8050
+2026-04-12 19:38:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 6550/8050
+2026-04-12 19:38:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 6600/8050
+2026-04-12 19:38:24 [INFO] scheduler.check_pipeline: Completed proxy checks: 6650/8050
+2026-04-12 19:38:29 [INFO] scheduler.check_pipeline: Completed proxy checks: 6700/8050
+2026-04-12 19:38:33 [INFO] scheduler.check_pipeline: Completed proxy checks: 6750/8050
+2026-04-12 19:38:37 [INFO] scheduler.check_pipeline: Completed proxy checks: 6800/8050
+2026-04-12 19:38:42 [INFO] scheduler.check_pipeline: Completed proxy checks: 6850/8050
+2026-04-12 19:38:46 [INFO] scheduler.check_pipeline: Completed proxy checks: 6900/8050
+2026-04-12 19:38:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 6950/8050
+2026-04-12 19:38:55 [WARNING] urllib3.connection: Failed to parse headers (url=http://95.85.252.153:21064/http://ip-api.com/json): [MissingHeaderBodySeparatorDefect()], unparsed data: 'Connection'
+Traceback (most recent call last):
+  File "C:\MyProjects\ProxyTester\.venv\Lib\site-packages\urllib3\connection.py", line 574, in getresponse
+    assert_header_parsing(httplib_response.msg)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\MyProjects\ProxyTester\.venv\Lib\site-packages\urllib3\util\response.py", line 88, in assert_header_parsing
+    raise HeaderParsingError(defects=defects, unparsed_data=unparsed_data)
+urllib3.exceptions.HeaderParsingError: [MissingHeaderBodySeparatorDefect()], unparsed data: 'Connection'
+2026-04-12 19:38:56 [INFO] scheduler.check_pipeline: Completed proxy checks: 7000/8050
+2026-04-12 19:39:01 [INFO] scheduler.check_pipeline: Completed proxy checks: 7050/8050
+2026-04-12 19:39:06 [INFO] scheduler.check_pipeline: Completed proxy checks: 7100/8050
+2026-04-12 19:39:11 [INFO] scheduler.check_pipeline: Completed proxy checks: 7150/8050
+2026-04-12 19:39:16 [INFO] scheduler.check_pipeline: Completed proxy checks: 7200/8050
+2026-04-12 19:39:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 7250/8050
+2026-04-12 19:39:25 [INFO] scheduler.check_pipeline: Completed proxy checks: 7300/8050
+2026-04-12 19:39:29 [INFO] scheduler.check_pipeline: Completed proxy checks: 7350/8050
+2026-04-12 19:39:33 [INFO] scheduler.check_pipeline: Completed proxy checks: 7400/8050
+2026-04-12 19:39:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 7450/8050
+2026-04-12 19:39:44 [INFO] scheduler.check_pipeline: Completed proxy checks: 7500/8050
+2026-04-12 19:39:49 [INFO] scheduler.check_pipeline: Completed proxy checks: 7550/8050
+2026-04-12 19:39:54 [INFO] scheduler.check_pipeline: Completed proxy checks: 7600/8050
+2026-04-12 19:39:59 [INFO] scheduler.check_pipeline: Completed proxy checks: 7650/8050
+2026-04-12 19:40:04 [INFO] scheduler.check_pipeline: Completed proxy checks: 7700/8050
+2026-04-12 19:40:10 [INFO] scheduler.check_pipeline: Completed proxy checks: 7750/8050
+2026-04-12 19:40:15 [INFO] scheduler.check_pipeline: Completed proxy checks: 7800/8050
+2026-04-12 19:40:20 [INFO] scheduler.check_pipeline: Completed proxy checks: 7850/8050
+2026-04-12 19:40:26 [INFO] scheduler.check_pipeline: Completed proxy checks: 7900/8050
+2026-04-12 19:40:39 [INFO] scheduler.check_pipeline: Completed proxy checks: 7950/8050
+2026-04-12 19:41:17 [INFO] scheduler.check_pipeline: Completed proxy checks: 8000/8050
+2026-04-12 19:43:51 [INFO] scheduler.check_pipeline: Completed proxy checks: 8050/8050
+2026-04-12 19:43:51 [INFO] scheduler.check_pipeline: Persisting 697 alive proxies to the repository serially
+2026-04-12 19:43:51 [INFO] scheduler.check_pipeline: Persisted proxies: 50/697
+2026-04-12 19:43:51 [INFO] scheduler.check_pipeline: Persisted proxies: 100/697
+2026-04-12 19:43:51 [INFO] scheduler.check_pipeline: Persisted proxies: 150/697
+2026-04-12 19:43:51 [INFO] scheduler.check_pipeline: Persisted proxies: 200/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 250/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 300/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 350/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 400/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 450/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 500/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 550/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 600/697
+2026-04-12 19:43:52 [INFO] scheduler.check_pipeline: Persisted proxies: 650/697
+2026-04-12 19:43:53 [INFO] scheduler.check_pipeline: Persisted proxies: 697/697
+2026-04-12 19:43:53 [INFO] scheduler.check_pipeline: Finished check batch in 940.37s (contexts=8050 alive=697)
+2026-04-12 19:43:53 [INFO] services.proxy_check_service: Full proxy check completed: 697/8050 proxies alive
+2026-04-12 19:43:53 [INFO] services.proxy_check_service: Closing MySQL repository
+2026-04-12 19:43:53 [INFO] storage.mysql.proxy_repository: Closing MySQL connection for proxy repository
+2026-04-12 19:43:53 [INFO] services.proxy_workflow_service: Automated workflow completed in 946.58s (sources=4 collected=8050 alive=697)
+2026-04-12 22:53:11 [INFO] werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.130.115.39:5000
+2026-04-12 22:53:11 [INFO] werkzeug: [33mPress CTRL+C to quit[0m
+2026-04-12 22:53:11 [INFO] werkzeug:  * Restarting with stat
+2026-04-12 22:53:12 [WARNING] werkzeug:  * Debugger is active!
+2026-04-12 22:53:12 [INFO] werkzeug:  * Debugger PIN: 324-302-731
