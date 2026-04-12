@@ -449,6 +449,7 @@ urllib3.exceptions.HeaderParsingError: [MissingHeaderBodySeparatorDefect()], unp
 2026-04-12 19:43:53 [INFO] services.proxy_check_service: Closing MySQL repository
 2026-04-12 19:43:53 [INFO] storage.mysql.proxy_repository: Closing MySQL connection for proxy repository
 2026-04-12 19:43:53 [INFO] services.proxy_workflow_service: Automated workflow completed in 946.58s (sources=4 collected=8050 alive=697)
+<<<<<<< HEAD
 2026-04-12 22:53:11 [INFO] werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
@@ -457,3 +458,5 @@ urllib3.exceptions.HeaderParsingError: [MissingHeaderBodySeparatorDefect()], unp
 2026-04-12 22:53:11 [INFO] werkzeug:  * Restarting with stat
 2026-04-12 22:53:12 [WARNING] werkzeug:  * Debugger is active!
 2026-04-12 22:53:12 [INFO] werkzeug:  * Debugger PIN: 324-302-731
+=======
+>>>>>>> 9440b2854b02d216d9316c3b2ee5972d13141457
