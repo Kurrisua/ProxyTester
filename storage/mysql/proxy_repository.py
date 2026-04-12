@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import AbstractContextManager
 
 from core.interfaces.checker_base import BaseProxyRepository
@@ -9,14 +10,17 @@ from storage.mysql.connection import create_connection
 
 class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.conn = create_connection()
         self.cursor = self.conn.cursor()
+        self.logger.info("Opened MySQL connection for proxy repository")
         self._ensure_columns()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.logger.info("Closing MySQL connection for proxy repository")
         self.cursor.close()
         self.conn.close()
 
