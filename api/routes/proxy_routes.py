@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
 
-from services.proxy_check_service import ProxyCheckService
 from services.proxy_query_service import ProxyQueryService
+from services.proxy_workflow_service import ProxyWorkflowService
 
 proxy_bp = Blueprint("proxy", __name__)
 
@@ -69,8 +69,23 @@ def delete_proxy(ip: str, port: str):
 
 @proxy_bp.route("/api/refresh", methods=["POST"])
 def refresh_proxies():
-    file_path = request.json.get("filePath", "lastData.txt") if request.is_json else "lastData.txt"
-    check_service = ProxyCheckService()
-    proxies = check_service.load_from_file(file_path)
-    alive = check_service.run_full_check(proxies, save_to_db=True)
-    return jsonify({"success": True, "message": "刷新任务完成", "aliveCount": len(alive)})
+    payload = request.get_json(silent=True) if request.is_json else {}
+    payload = payload if isinstance(payload, dict) else {}
+    summary = ProxyWorkflowService().run_automated_workflow(
+        refresh_external_sources=bool(payload.get("refreshCrawler", True)),
+        include_deadpool_sources=bool(payload.get("includeDeadpoolSources", True)),
+        max_workers=int(payload.get("maxWorkers", 150)),
+        save_to_db=bool(payload.get("saveToDb", True)),
+    )
+    return jsonify(
+        {
+            "success": True,
+            "message": "刷新任务完成",
+            "aliveCount": summary["aliveCount"],
+            "collectedCount": summary["collectedCount"],
+            "jsonRecordCount": summary["jsonRecordCount"],
+            "canonicalFile": summary["canonicalFile"],
+            "refreshSummary": summary["refreshSummary"],
+            "sources": summary["sources"],
+        }
+    )

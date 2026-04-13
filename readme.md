@@ -1,211 +1,413 @@
 # ProxyTester
 
-一个以 Python + Flask + MySQL 为后端、React + TypeScript 为前端的代理检测与管理系统。  
-系统支持从文件加载代理，执行多阶段检测（连通性、协议、匿名性、地理位置、业务可用性、安全插件、评分），并通过 API 提供查询与管理能力。
-
-## 1. 项目目标
-
-`ProxyTester` 解决的是“代理是否可用、可用于什么场景、风险如何、如何筛选”的问题。核心目标：
-
-- 批量检测代理可用性（多线程）
-- 输出可读的质量评分与安全风险标签
-- 持久化到 MySQL，支持分页、筛选、排序
-- 提供前端面板用于查看和操作代理数据
+`ProxyTester` 是一个面向代理资源采集、检测、评分、入库和查询展示的一体化项目。  
+项目原本已经具备“代理检测与管理”主流程，这次又把 `new/` 目录下的 Deadpool 抓取项目并入到了统一架构里，使整个系统从“仅检测已有代理”升级为“抓取 + 合并 + 检测 + 入库 + 查询”的自动化流水线。
 
 ---
 
-## 2. 当前代码结构与模块作用
+## 1. 项目目的与当前已实现内容
 
-> 下方是按“职责域”组织的说明，重点覆盖当前主流程中实际使用的模块。
+### 1.1 项目目的
 
-### 2.1 启动入口层
+这个项目要解决的核心问题是：
 
-- `main.py`
-  - 命令行入口，走完整检测流程（读取 `lastData.txt` -> 检测 -> 输出结果）。
-- `api.py`
-  - Flask API 入口，启动 HTTP 服务，供前端调用。
-- `api/app_factory.py`
-  - Flask 应用工厂，注册 CORS 和路由蓝图。
-- `api/routes/proxy_routes.py`
-  - API 路由定义：代理列表、筛选项、统计、高质量代理、删除、刷新检测。
+- 如何从多个来源持续获得可用代理
+- 如何批量判断这些代理是否真的可用
+- 如何识别代理支持的协议、匿名性、地理位置和业务可用性
+- 如何对代理进行统一评分并保存，供后续筛选和使用
+- 如何通过 API 和前端界面方便地查看、筛选和刷新代理池
 
-### 2.2 服务层（业务编排）
+换句话说，`ProxyTester` 不只是一个“代理检查脚本”，而是一个完整的代理资产处理系统。
 
-- `services/proxy_check_service.py`
-  - 检测服务门面。
-  - 负责：
-    - 从文件收集代理（通过 `FileProxyCollector`）
-    - 构建检测流水线（checkers + security checkers + scorers）
-    - 批量执行检查并按需写库
-- `services/proxy_query_service.py`
-  - 查询服务门面。
-  - 负责：
-    - 读取仓储层数据
-    - 转换 API 返回结构（状态文案、协议数组、成功率等）
-    - 删除代理
+### 1.2 当前已经实现的能力
 
-### 2.3 调度层（流水线执行）
+目前仓库里已经实现了以下能力：
 
-- `scheduler/check_pipeline.py`
-  - 核心调度器。
-  - 负责：
-    - 按 `order` 顺序执行普通检测器
-    - 执行阻断逻辑（`blocking=True` 且失败则停止后续普通检测）
-    - 对可用代理执行安全插件
-    - 执行评分器
-    - 可选写入仓储层
-  - 并发模型：
-    - `ThreadPoolExecutor`，批量代理并发检测（`max_workers` 可配置）
+- 从文本文件中读取代理列表
+- 对代理进行多阶段检测
+- 识别 `HTTP`、`HTTPS`、`SOCKS5` 等协议能力
+- 检测匿名性、出口地理位置、业务目标可达性
+- 执行安全插件检查与评分
+- 将结果写入 MySQL
+- 通过 Flask API 查询代理列表、统计信息和高质量代理
+- 通过 React 前端页面查看代理池状态
+- 集成 Deadpool 抓取项目，自动刷新额外的代理种子文件
+- 将多个来源的代理合并、去重、标准化，并统一送入检测流程
+- 增加了运行日志，便于排查每一步的执行状态
 
-### 2.4 核心抽象层（可扩展基础）
+### 1.3 这次整合后的统一工作流
 
-- `core/interfaces/checker_base.py`
-  - 扩展接口定义：
-    - `BaseChecker`：普通检测器
-    - `BaseSecurityChecker`：安全检测插件
-    - `BaseScorer`：评分器
-    - `BaseProxyRepository`：仓储接口
-- `core/context/check_context.py`
-  - 检测上下文容器：聚合单个代理在整个流水线中的中间结果。
-- `core/models/proxy_model.py`
-  - 代理核心实体 `ProxyModel`，包含协议能力、匿名性、地理信息、评分、安全风险等字段。
-- `core/models/results.py`
-  - 标准结果对象：
-    - `CheckResult`
-    - `SecurityResult`
-    - `ScoreResult`
+当前自动化流程如下：
 
-### 2.5 检测器层（普通检测）
-
-- 注册入口：`checkers/registry.py`
-  - `build_default_checkers()` 返回默认检测链顺序：
-    1. `TcpChecker`
-    2. `Socks5Checker`
-    3. `HttpsChecker`
-    4. `HttpChecker`
-    5. `ProtocolAggregator`
-    6. `AnonymityChecker`
-    7. `ExitGeoChecker`
-    8. `IpGeoFallbackChecker`
-    9. `BusinessAvailabilityChecker`
-
-- `checkers/connectivity/tcp_checker.py`
-  - TCP 端口连通性测试，是首个阻断检查（失败后通常停止后续普通检测）。
-
-- `checkers/protocol/`
-  - `socks5_checker.py`：SOCKS5 握手检测
-  - `https_checker.py`：CONNECT 隧道可用性检测
-  - `http_checker.py`：HTTP 出口可用性检测（多目标探测）
-  - `protocol_aggregator.py`：汇总协议能力并更新 `proxy_type`
-
-- `checkers/anonymity/anonymity_checker.py`
-  - 通过请求目标服务判断匿名级别（高匿/匿名/透明）。
-
-- `checkers/geo/`
-  - `exit_geo_checker.py`：通过代理出口查询地理位置（优先）
-  - `ip_geo_fallback_checker.py`：出口 GEO 失败时按代理 IP 回退查询
-
-- `checkers/business/business_availability_checker.py`
-  - 业务目标可达性测试（Google/Baidu/GitHub）并计算 `business_score`。
-
-### 2.6 安全插件层
-
-- 注册入口：`security/registry.py`
-  - 通过 `utils/plugin_loader.py` 自动扫描 `security/plugins` 下继承 `BaseSecurityChecker` 的类。
-- 默认插件目录：`security/plugins/`
-  - `honeypot_checker.py`
-  - `dom_diff_checker.py`
-  - `mitm_checker.py`
-  - `traffic_analysis_checker.py`
-- 当前状态：
-  - 插件接口与加载机制已完整；默认插件实现偏占位（placeholder），便于后续替换为真实策略。
-
-### 2.7 评分层
-
-- `scoring/composite_scorer.py`
-  - 默认评分器集合构建入口。
-- `scoring/quality_scorer.py`
-  - 质量分（0-100）：成功率 + 响应耗时 + 业务分。
-- `scoring/security_scorer.py`
-  - 汇总安全结果，给出 `security_risk`、`security_flags`、`security_evidence`。
-
-### 2.8 采集与工具层
-
-- `collectors/file_collector.py`
-  - 从文本文件读取代理（去重），产出 `set[ProxyModel]`。
-- `utils/http_client.py`
-  - 网络请求与套接字工具封装（`requests` 代理参数、计时请求、TCP 连接等）。
-- `utils/plugin_loader.py`
-  - 插件动态发现与实例化。
-
-### 2.9 存储层
-
-- `storage/mysql/connection.py`
-  - MySQL 连接工厂，读取环境变量。
-- `storage/mysql/proxy_repository.py`
-  - MySQL 仓储实现。
-  - 负责：
-    - 保存/更新代理
-    - 分页筛选查询
-    - 统计汇总
-    - 高质量代理查询
-    - 删除代理
-
-### 2.10 前端层
-
-- 目录：`daili/`
-- `daili/src/App.tsx`
-  - 主界面（统计卡片、过滤、列表、删除、刷新）。
-- `daili/src/lib/api.ts`
-  - 前端 API 调用封装，对接 Flask 后端。
-- `daili/src/types.ts`
-  - 前端数据类型定义（`ProxyNode`、`DashboardStats`）。
-
-### 2.11 兼容与历史入口
-
-- `check/main_check.py`
-  - 兼容接口封装，内部已委托到新服务层（`ProxyCheckService`）。
-- `proxy.py`、`sql.py`
-  - 兼容别名导出（便于旧调用方式继续工作）。
+1. 可选执行 Deadpool 的抓取脚本 `fir.py`
+2. 读取多个代理源文件
+3. 将所有代理按 `ip:port` 去重合并
+4. 生成统一的标准数据集文件
+5. 生成结构化 JSON 数据集
+6. 执行并发检测
+7. 对检测通过的代理串行写入 MySQL
+8. 通过 API 和前端提供查询与刷新能力
 
 ---
 
-## 3. 检测流程（端到端）
+## 2. 整体结构与各层次具体职能
 
-1. 读取代理源（默认 `lastData.txt`）  
-2. 构建 `CheckPipeline`  
-3. 多线程执行普通检测器链  
-4. 对“可用代理”执行安全插件  
-5. 执行评分器写回模型  
-6. `save_to_db=True` 时写入 MySQL  
-7. API 层查询并返回前端结构化数据
+项目整体上可以理解为七层：
+
+1. 入口层
+2. 采集层
+3. 核心抽象层
+4. 检测调度层
+5. 评分与安全层
+6. 持久化层
+7. 展示与接口层
+
+下面按目录详细说明。
+
+### 2.1 入口层
+
+入口层负责启动整个系统或某条具体流程。
+
+#### `main.py`
+
+统一命令行入口。  
+现在它不再只是读取一个 `lastData.txt` 进行检测，而是负责触发完整自动化流程：
+
+- 可选刷新 Deadpool 抓取结果
+- 合并多个代理源
+- 生成标准数据集和 JSON
+- 执行检测
+- 可选写入数据库
+
+#### `api.py`
+
+后端服务启动入口。  
+运行后会启动 Flask API，供前端或其他脚本调用。
+
+#### `start_all.ps1`
+
+用于同时启动后端和前端开发环境的脚本。
+
+#### `start_servers.bat`
+
+Windows 下的辅助启动脚本。
 
 ---
 
-## 4. 环境准备与启动
+### 2.2 采集层 `collectors/`
 
-## 4.1 依赖要求
+采集层负责定义“代理从哪里来”，以及“采集后的原始文本如何变成统一格式”。
+
+#### `collectors/defaults.py`
+
+定义采集相关的默认路径，包括：
+
+- 主项目标准数据集路径
+- JSON 输出路径
+- Deadpool 项目目录
+- Deadpool 生成的多个源文件路径
+
+这是整个采集层的路径配置中心。
+
+#### `collectors/source_provider.py`
+
+定义默认代理源列表。  
+当前已经纳入的源包括：
+
+- `collectors/data/lastData.txt`
+- `new/.../lastData.txt`
+- `new/.../http.txt`
+- `new/.../git.txt`
+
+也就是说，这里负责告诉系统：“这次要从哪些文件里收代理”。
+
+#### `collectors/file_collector.py`
+
+负责真正读取代理文件，并把文本行解析成 `ProxyModel` 对象。  
+目前支持的基本格式是：
+
+```text
+IP:PORT source_name
+```
+
+解析失败的行会被跳过，并记录日志。
+
+#### `collectors/transformers/last_data_to_json.py`
+
+把标准化后的 `lastData.txt` 转成结构化 JSON 数据集，便于后续调试、对接或展示。
+
+#### `collectors/deadpool_runner.py`
+
+这是这次新增的重要模块。  
+它专门负责调用并入的 Deadpool 项目中的 `fir.py`，刷新 Deadpool 生成的代理种子文件。
+
+它的职责是：
+
+- 定位 Deadpool 项目目录
+- 执行 `fir.py`
+- 记录 stdout/stderr 摘要
+- 记录运行耗时
+- 在超时或失败时返回结构化结果
+
+这个模块本身不做代理检测，它只负责“刷新代理源”。
+
+---
+
+### 2.3 核心抽象层 `core/`
+
+核心层提供统一的数据结构和接口定义，让系统各模块能按一致方式协作。
+
+#### `core/interfaces/`
+
+定义系统中的抽象接口，包括：
+
+- 代理源提供器接口
+- 代理采集器接口
+- 数据转换器接口
+- 检测器接口
+- 安全检测器接口
+- 评分器接口
+- 仓储接口
+
+这一层的意义是：后续新增任何模块时，都可以沿着统一协议接入，而不是直接硬编码到业务流程里。
+
+#### `core/models/proxy_model.py`
+
+定义代理的核心数据对象 `ProxyModel`。  
+它承载了整个系统中围绕代理的主要字段，例如：
+
+- IP、端口、来源
+- 是否存活
+- 支持的协议
+- 匿名性
+- 国家、城市、ISP
+- 响应时间
+- 业务评分
+- 质量评分
+- 安全风险
+
+#### `core/models/results.py`
+
+定义每一类检查结果对象，例如：
+
+- 普通检查结果
+- 安全检查结果
+- 评分结果
+
+#### `core/context/check_context.py`
+
+定义检测上下文。  
+每个代理在整条流水线中会携带自己的上下文，逐步累积检查结果、评分结果和最终状态。
+
+---
+
+### 2.4 检测调度层 `scheduler/` 与 `checkers/`
+
+这一层负责“代理怎么检测、按什么顺序检测、什么情况下终止后续检测”。
+
+#### `scheduler/check_pipeline.py`
+
+这是核心调度器。  
+它负责：
+
+- 按 `order` 顺序执行检测器
+- 遇到阻断型失败时提前停止
+- 并发执行多个代理的检测
+- 在检测完成后统一执行入库
+
+注意：目前已经修复为“检测并发、入库串行”，避免多线程共享同一个数据库连接导致异常。
+
+#### `checkers/registry.py`
+
+负责注册默认检测器集合。
+
+#### `checkers/connectivity/`
+
+负责基础连通性检测：
+
+- TCP 是否可连
+
+#### `checkers/protocol/`
+
+负责协议能力检测：
+
+- `SOCKS5`
+- `HTTPS`
+- `HTTP`
+- 协议聚合
+
+#### `checkers/anonymity/`
+
+负责匿名性判断。
+
+#### `checkers/geo/`
+
+负责出口地理位置检测和 IP 回退地理位置检测。
+
+#### `checkers/business/`
+
+负责业务目标可达性检测，例如某些站点是否能通过代理访问成功。
+
+---
+
+### 2.5 安全与评分层 `security/`、`scoring/`
+
+这一层负责将代理从“可用/不可用”进一步扩展为“质量好不好、风险高不高”。
+
+#### `security/registry.py`
+
+负责自动加载安全插件。
+
+#### `security/plugins/`
+
+目前包含若干安全检测插件，如：
+
+- `honeypot_checker.py`
+- `dom_diff_checker.py`
+- `mitm_checker.py`
+- `traffic_analysis_checker.py`
+
+其中有些还偏占位实现，但接口和加载机制已经完整。
+
+#### `scoring/quality_scorer.py`
+
+根据响应时间、成功率、业务分等信息给出质量评分。
+
+#### `scoring/security_scorer.py`
+
+根据安全插件结果汇总风险等级和风险标记。
+
+#### `scoring/composite_scorer.py`
+
+负责构建默认评分器组合。
+
+---
+
+### 2.6 服务层 `services/`
+
+服务层负责把底层模块编排成用户真正会调用的业务流程。
+
+#### `services/proxy_check_service.py`
+
+负责“给一批代理做完整检测”。  
+它的职责包括：
+
+- 构建默认检测器、评分器、安全插件
+- 调用 `CheckPipeline`
+- 返回存活代理
+- 可选写入 MySQL
+
+#### `services/proxy_query_service.py`
+
+负责面向 API 的查询能力，例如：
+
+- 分页列表
+- 筛选条件
+- 统计信息
+- 高质量代理查询
+- 删除代理
+
+#### `services/proxy_workflow_service.py`
+
+这是这次新增的自动化编排核心。  
+它负责把原先分散的步骤串起来：
+
+- 触发 Deadpool 刷新
+- 收集多个代理源
+- 合并和去重
+- 回写标准数据集
+- 生成 JSON
+- 触发完整检测
+- 可选入库
+
+可以把它理解成当前项目的“总导演”。
+
+---
+
+### 2.7 持久化层 `storage/`
+
+#### `storage/mysql/connection.py`
+
+负责创建 MySQL 连接。
+
+#### `storage/mysql/proxy_repository.py`
+
+负责代理结果的数据库读写，包括：
+
+- 保存和更新代理
+- 分页查询
+- 统计
+- 删除
+
+注意：现在数据库保存已经由调度器统一串行调用，避免线程安全问题。
+
+---
+
+### 2.8 展示与接口层 `api/`、`daili/`
+
+#### `api/`
+
+Flask API 层，提供标准 HTTP 接口。
+
+重点接口：
+
+- `GET /api/proxies`
+- `GET /api/filters`
+- `GET /api/stats`
+- `GET /api/proxies/high-quality`
+- `DELETE /api/proxies/{ip}:{port}`
+- `POST /api/refresh`
+
+其中 `/api/refresh` 已经改为触发整条自动化流程。
+
+#### `daili/`
+
+React + TypeScript 前端目录，用于展示代理统计信息、筛选条件和列表数据。
+
+---
+
+### 2.9 并入模块 `new/`
+
+#### `new/proxyxy/Deadpool-proxypool1.5/Deadpool-proxypool1.5`
+
+这是并入的代理抓取项目。  
+它主要负责：
+
+- 通过 `fir.py` 从公开源抓取代理列表
+- 生成 `http.txt`、`git.txt`、`lastData.txt`
+- 通过 `main_modify.go` 提供一个长期驻留的本地 SOCKS 转发监听能力
+
+当前主项目自动化流程集成的是它的批量抓取部分，即 `fir.py`。  
+`main_modify.go` 目前仍作为独立能力保留，不直接纳入主检测流水线。
+
+---
+
+## 3. 使用方法
+
+这一部分按“最常见场景”来说明。
+
+### 3.1 环境要求
 
 - Python 3.9+
 - Node.js 18+
 - MySQL 5.7+
 
-## 4.2 安装依赖
+### 3.2 安装依赖
 
-后端：
+后端依赖：
 
 ```bash
 pip install flask flask-cors pymysql requests
 ```
 
-前端：
+前端依赖：
 
 ```bash
 cd daili
 npm install
 ```
 
-## 4.3 初始化数据库
+### 3.3 初始化数据库
 
 ```sql
 CREATE DATABASE proxy_pool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -237,9 +439,9 @@ CREATE TABLE proxies (
 );
 ```
 
-## 4.4 数据库环境变量
+### 3.4 配置数据库环境变量
 
-Windows PowerShell:
+PowerShell 示例：
 
 ```powershell
 $env:DB_HOST="localhost"
@@ -249,9 +451,9 @@ $env:DB_PASSWORD="your_password"
 $env:DB_NAME="proxy_pool"
 ```
 
-## 4.5 准备代理源文件
+### 3.5 准备代理源文件
 
-编辑 `lastData.txt`，每行格式建议：
+标准文件格式：
 
 ```text
 IP:PORT source_name
@@ -264,215 +466,356 @@ IP:PORT source_name
 10.0.0.1:3128 api_source
 ```
 
-## 4.6 启动方式
+主项目标准数据文件位置：
 
-方式 1（手动）：
+- `collectors/data/lastData.txt`
+
+### 3.6 运行命令行自动化流程
+
+最完整方式：
 
 ```bash
-# 后端 API
-python api.py
+python main.py
+```
 
-# 新终端启动前端
+常用参数：
+
+```bash
+python main.py --skip-crawl
+python main.py --skip-deadpool-sources
+python main.py --skip-db
+python main.py --max-workers 200
+```
+
+参数说明：
+
+- `--skip-crawl`
+  - 跳过 Deadpool 抓取刷新
+- `--skip-deadpool-sources`
+  - 不读取 Deadpool 生成的代理文件
+- `--skip-db`
+  - 做完整检测，但不把结果写入 MySQL
+- `--max-workers`
+  - 设置检测并发数
+
+建议的运行顺序：
+
+1. 先跳过抓取和入库，确认检测流程正常
+
+```bash
+python main.py --skip-crawl --skip-db --max-workers 50
+```
+
+2. 再开启入库
+
+```bash
+python main.py --skip-crawl --max-workers 50
+```
+
+3. 最后再跑完整自动化
+
+```bash
+python main.py --max-workers 50
+```
+
+### 3.7 启动 API
+
+```bash
+python api.py
+```
+
+### 3.8 启动前端
+
+```bash
 cd daili
 npm run dev
 ```
 
-方式 2（脚本）：
+### 3.9 一键启动前后端
 
 ```powershell
 .\start_all.ps1
 ```
 
-```cmd
-start_servers.bat
-```
-
 ---
 
-## 5. API 概览
+## 4. 新增模块的操作方法
 
-- `GET /api/proxies`
-  - 分页列表 + 过滤 + 排序。
-- `GET /api/filters`
-  - 返回可筛选国家、协议类型等。
-- `GET /api/stats`
-  - 返回统计摘要。
-- `GET /api/proxies/high-quality`
-  - 返回高质量代理。
-- `DELETE /api/proxies/{ip}:{port}`
-  - 删除指定代理。
-- `POST /api/refresh`
-  - 重新加载文件并触发全量检测。
+这一部分重点说明本次新增和变化较大的模块应该怎么使用。
 
----
+### 4.1 `services/proxy_workflow_service.py`
 
-## 6. 如何新增组件（重点）
-
-这里把“新增组件”拆成 6 类：普通检测器、安全插件、评分器、采集器、仓储实现、前端组件。  
-每一类都给出最小步骤、接入点和示例。
-
-### 6.1 新增普通检测器（`BaseChecker`）
-
-适用于：新增一个检测阶段，例如“端口指纹识别”“TLS 特征检测”等。
-
-步骤：
-
-1. 在 `checkers/` 下选择合适子目录（或新建子目录）创建文件，例如 `checkers/protocol/tls_checker.py`。
-2. 继承 `BaseChecker`，实现 `supports()` 和 `check()`。
-3. 设定 `name`、`stage`、`order`、`blocking`。
-4. 在 `checkers/registry.py` 的 `build_default_checkers()` 中注册实例，并放入合适顺序。
-5. 如需把结果写入模型，在 `scheduler/check_pipeline.py` 的 `_apply_check_result()` 中增加对 `checker_name` 的处理。
-6. 运行 `python main.py` 或 `POST /api/refresh` 验证。
-
-示例：
+这是新的主流程编排器。  
+如果你在代码里想手动调用完整自动化流程，可以这样用：
 
 ```python
-from core.context.check_context import CheckContext
-from core.interfaces.checker_base import BaseChecker
-from core.models.results import CheckResult
+from services.proxy_workflow_service import ProxyWorkflowService
 
+summary = ProxyWorkflowService().run_automated_workflow(
+    refresh_external_sources=True,
+    include_deadpool_sources=True,
+    max_workers=150,
+    save_to_db=True,
+)
 
-class TlsChecker(BaseChecker):
-    name = "tls_checker"
-    stage = "protocol"
-    order = 35
-    blocking = False
-
-    def supports(self, context: CheckContext) -> bool:
-        return context.proxy.is_alive
-
-    def check(self, context: CheckContext) -> CheckResult:
-        # TODO: 你的检测逻辑
-        ok = False
-        return CheckResult(
-            checker_name=self.name,
-            stage=self.stage,
-            success=ok,
-            metadata={"tls_supported": ok},
-        )
+print(summary)
 ```
 
-### 6.2 新增安全插件（`BaseSecurityChecker`）
+返回结果中会包含：
 
-适用于：新增风险检测，如证书异常、内容篡改、流量行为评分等。
+- `refreshSummary`
+- `sources`
+- `sourceCount`
+- `collectedCount`
+- `aliveCount`
+- `canonicalFile`
+- `jsonFile`
+- `jsonRecordCount`
+- `elapsedSeconds`
 
-步骤：
+适合场景：
 
-1. 在 `security/plugins/` 新建插件文件，例如 `security/plugins/tls_fingerprint_checker.py`。
-2. 继承 `BaseSecurityChecker`，实现 `supports()`、`check()`。
-3. 返回 `SecurityResult`，至少包含 `risk_level` 与可选 `risk_tags/evidence`。
-4. 无需手动注册，`security/registry.py` 会自动加载该目录插件。
-5. 运行检查后确认 `security_scorer` 能汇总你的结果。
+- 你想从 Python 代码里直接触发整套自动化
+- 你想后续接定时任务
+- 你想在别的服务里嵌入这条流程
 
-示例：
+### 4.2 `collectors/deadpool_runner.py`
+
+这个模块用于刷新 Deadpool 的代理种子文件。
+
+基本用法：
 
 ```python
-from core.context.check_context import CheckContext
-from core.interfaces.checker_base import BaseSecurityChecker
-from core.models.results import SecurityResult
+from collectors.deadpool_runner import DeadpoolSeedRunner
 
-
-class TlsFingerprintChecker(BaseSecurityChecker):
-    name = "tls_fingerprint_checker"
-    order = 25
-
-    def supports(self, context: CheckContext) -> bool:
-        return context.proxy.https or context.proxy.socks5
-
-    def check(self, context: CheckContext) -> SecurityResult:
-        # TODO: 你的检测逻辑
-        suspicious = False
-        return SecurityResult(
-            checker_name=self.name,
-            success=not suspicious,
-            risk_level="medium" if suspicious else "low",
-            risk_tags=["tls-mismatch"] if suspicious else [],
-            evidence={"sample": "fingerprint-data"},
-        )
+result = DeadpoolSeedRunner().run(timeout_seconds=180)
+print(result)
 ```
 
-### 6.3 新增评分器（`BaseScorer`）
+它会执行：
 
-适用于：增加新的评分维度（稳定性、地域可信度、成本分等）。
+- `new/proxyxy/Deadpool-proxypool1.5/Deadpool-proxypool1.5/fir.py`
 
-步骤：
+执行完成后主要影响的文件是：
 
-1. 在 `scoring/` 新建评分器文件，例如 `scoring/stability_scorer.py`。
-2. 继承 `BaseScorer` 并实现 `score(context)`。
-3. 在 `scoring/composite_scorer.py` 的 `build_default_scorers()` 中注册。
-4. 如需持久化新分值，扩展 `ProxyModel` 字段和数据库字段。
+- `new/.../http.txt`
+- `new/.../git.txt`
+- `new/.../lastData.txt`
 
-### 6.4 新增采集器（代理来源组件）
+适合场景：
 
-适用于：新增“文件之外”的数据源，比如 HTTP API、Redis、消息队列。
+- 只想刷新抓取结果，不做检测
+- 调试 Deadpool 抓取阶段是否正常
 
-步骤：
+### 4.3 `collectors/source_provider.py`
 
-1. 在 `collectors/` 新建采集器，如 `api_collector.py`。
-2. 实现 `collect(...) -> set[ProxyModel]`。
-3. 在调用侧（如 `ProxyCheckService` 或路由）增加入口并并入代理集合。
-4. 对输入去重（依赖 `ProxyModel.__hash__/__eq__` 已支持 ip+port 去重）。
+如果你想新增新的代理源，最直接的方式就是在这里追加新的 `ProxySourceDefinition`。
 
-### 6.5 新增仓储实现（持久化组件）
+例如你想再增加一个文件源：
 
-适用于：替换 MySQL，为 PostgreSQL/ClickHouse/ES 等。
+```python
+ProxySourceDefinition(
+    name="extra_file",
+    kind="file",
+    location="C:/path/to/proxies.txt",
+    description="Extra local proxy file",
+    metadata={"format": "ip:port source_name"},
+)
+```
 
-步骤：
+新增后，统一自动化流程会自动把它纳入合并与检测。
 
-1. 新建仓储类并实现 `BaseProxyRepository` 全部方法。
-2. 在 `ProxyCheckService` 与 `ProxyQueryService` 注入你的仓储实例。
-3. 保持返回对象仍是 `ProxyModel`（或在 service 层统一转换）。
+### 4.4 `collectors/file_collector.py`
 
-### 6.6 新增前端组件（React）
+如果新增的是“文本文件代理源”，通常不需要额外改采集逻辑，只要文件格式符合：
 
-适用于：新增页面卡片、风险详情面板、批量操作工具栏等。
+```text
+IP:PORT source_name
+```
 
-步骤：
+就能直接被这个 collector 处理。
 
-1. 在 `daili/src` 下新增组件文件（建议新增 `components/` 目录）。
-2. 在组件中使用 `daili/src/lib/api.ts` 拉取数据，或先扩展 API 封装。
-3. 如果后端字段变更，先同步更新 `daili/src/types.ts`。
-4. 在 `App.tsx` 中挂载组件并接入状态流（过滤、分页、刷新）。
-5. 本地运行 `npm run dev` 验证渲染和交互。
+### 4.5 `collectors/transformers/last_data_to_json.py`
+
+如果你只想把标准数据文件转成 JSON，而不跑完整检测，可以单独调用：
+
+```bash
+python -c "from collectors import DEFAULT_LAST_DATA_PATH, DEFAULT_LAST_DATA_JSON_PATH, LastDataJsonTransformer; LastDataJsonTransformer().transform(str(DEFAULT_LAST_DATA_PATH), str(DEFAULT_LAST_DATA_JSON_PATH))"
+```
+
+### 4.6 `/api/refresh` 接口
+
+这个接口现在不是简单重新读取文件，而是执行完整自动化流程。
+
+示例请求体：
+
+```json
+{
+  "refreshCrawler": true,
+  "includeDeadpoolSources": true,
+  "maxWorkers": 150,
+  "saveToDb": true
+}
+```
+
+适合场景：
+
+- 前端点击刷新
+- 外部脚本远程触发
+- 后续接入定时任务系统
+
+### 4.7 日志模块 `utils/logging_config.py`
+
+项目现在已经内置日志配置，默认会同时输出到：
+
+- 控制台
+- `logs/proxytester.log`
+
+日志覆盖阶段包括：
+
+- Deadpool 刷新
+- 代理文件读取
+- JSON 生成
+- 批量检测
+- 数据库保存
+- 主流程耗时
+
+如果你要排查流程卡住在哪一步，优先看这个日志文件。
 
 ---
 
-## 7. 新增组件时的工程规范建议
+## 5. 输出文件与数据流转说明
 
-- `name` 唯一：检测器/插件/评分器的 `name` 不要重复。
-- `order` 明确：越靠前越先执行，避免顺序冲突。
-- `supports()` 尽量严格：减少无效请求和耗时。
-- `metadata/evidence` 结构化：方便后续 API 和前端展示。
-- 失败返回要可诊断：`error` 字段给出明确错误原因。
-- 尽量避免在 checker 内直接写库：统一交给 pipeline + repository。
+### 5.1 输入侧
+
+当前代理输入可能来自这些文件：
+
+- `collectors/data/lastData.txt`
+- `new/.../lastData.txt`
+- `new/.../http.txt`
+- `new/.../git.txt`
+
+### 5.2 中间产物
+
+合并去重后的标准数据集：
+
+- `collectors/data/lastData.txt`
+
+结构化 JSON：
+
+- `collectors/data/lastData.json`
+
+### 5.3 日志文件
+
+- `logs/proxytester.log`
+
+### 5.4 数据库存储
+
+最终检测结果会进入 MySQL 的 `proxies` 表。
 
 ---
 
-## 8. 常见问题
+## 6. 如何新增模块
 
-### Q1: 如何提高检测速度？
+### 6.1 新增检测器
 
-- 提高 `max_workers`，但注意目标站点限流和本机网络上限。
-- 优化 `supports()`，让不适用检查尽早跳过。
-- 缩短单次 `timeout`，并控制 `retry_times`。
+步骤：
 
-### Q2: 为什么代理很多但存活率低？
+1. 在 `checkers/` 下新增检测器文件
+2. 继承 `BaseChecker`
+3. 实现 `supports()` 和 `check()`
+4. 在 `checkers/registry.py` 中注册
+5. 如有必要，在调度器中处理结果字段映射
 
-- 原始源质量问题常见。
-- 出口探测目标可能被地区封锁或限流。
-- 某些代理只支持特定协议，需看 `protocol_aggregator` 聚合结果。
+### 6.2 新增安全插件
 
-### Q3: 安全插件看起来没变化？
+步骤：
 
-- 当前默认插件多为占位实现。
-- 你需要在 `security/plugins` 中实现真实检测逻辑，风险评分才会拉开差异。
+1. 在 `security/plugins/` 下新增插件
+2. 继承 `BaseSecurityChecker`
+3. 实现 `supports()` 和 `check()`
+4. 插件会被自动发现和加载
+
+### 6.3 新增评分器
+
+步骤：
+
+1. 在 `scoring/` 下新增评分器
+2. 继承 `BaseScorer`
+3. 在 `scoring/composite_scorer.py` 中注册
+
+### 6.4 新增代理源
+
+步骤：
+
+1. 在 `collectors/source_provider.py` 中增加源定义
+2. 如果是文本文件源，通常不需要改采集器
+3. 如果是新类型源，可扩展新的 collector
+
+### 6.5 新增持久化实现
+
+如果后续需要支持 PostgreSQL、ClickHouse 等，可以新增仓储实现并替换 `MySQLProxyRepository`。
 
 ---
 
-## 9. 技术栈
+## 7. 日志与故障排查
 
-- 后端：Python, Flask, requests, PyMySQL
-- 调度：ThreadPoolExecutor
-- 前端：React, TypeScript, Vite
-- 数据库：MySQL
+### 7.1 常见日志位置
 
+- 控制台输出
+- `logs/proxytester.log`
+
+### 7.2 常见问题
+
+#### Deadpool 刷新很慢
+
+可能原因：
+
+- 公开源响应慢
+- 网络超时
+- 抓取量较大
+
+临时绕过：
+
+```bash
+python main.py --skip-crawl
+```
+
+#### 检测可以跑，但不想入库
+
+```bash
+python main.py --skip-db
+```
+
+#### 想最小化验证主流程
+
+```bash
+python main.py --skip-crawl --skip-db --max-workers 20
+```
+
+#### 数据库出错
+
+优先检查：
+
+- 环境变量是否正确
+- MySQL 服务是否正常
+- `proxy_pool.proxies` 表是否已创建
+
+---
+
+## 8. 当前已知限制
+
+- Deadpool 集成的主要是批量抓取部分，长期驻留的 Go SOCKS 监听模式还未纳入统一自动化
+- 某些安全插件仍偏占位实现
+- 当前主要持久化目标仍是 MySQL
+- 代理来源质量波动较大，最终可用率依赖外部源质量
+
+---
+
+## 9. 后续建议
+
+- 把 Deadpool 的敏感配置从 `config.toml` 迁移到环境变量
+- 为 `ProxyWorkflowService` 增加单元测试
+- 增加定时任务或调度器，周期性运行自动化流程
+- 为前端增加刷新任务状态展示
+- 后续可将 Go 侧监听模式拆成独立可选服务
