@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from services.proxy_workflow_service import ProxyWorkflowService
+from utils import configure_logging
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -15,6 +16,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 if __name__ == "__main__":
+    configure_logging()
     args = build_parser().parse_args()
     summary = ProxyWorkflowService().run_automated_workflow(
         refresh_external_sources=not args.skip_crawl,

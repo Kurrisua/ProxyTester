@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from time import perf_counter
 
 from core.context.check_context import CheckContext
 
@@ -12,6 +14,7 @@ class CheckPipeline:
         self.scorers = scorers
         self.repository = repository
         self.max_workers = max_workers
+        self.logger = logging.getLogger(__name__)
 
     def run_for_proxy(self, proxy):
         context = CheckContext(proxy=proxy)
@@ -34,17 +37,47 @@ class CheckPipeline:
         for scorer in self.scorers:
             scorer.score(context)
 
-        if self.repository and context.proxy.is_alive:
-            self.repository.save_proxy(context.proxy)
         return context
 
     def run_batch(self, proxies):
         contexts = []
+        total = len(proxies)
+        started_at = perf_counter()
+        self.logger.info("Starting check batch for %s proxies with max_workers=%s", total, self.max_workers)
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_map = {executor.submit(self.run_for_proxy, proxy): proxy for proxy in proxies}
-            for future in as_completed(future_map):
-                contexts.append(future.result())
+            for index, future in enumerate(as_completed(future_map), start=1):
+                proxy = future_map[future]
+                try:
+                    contexts.append(future.result())
+                except Exception:
+                    self.logger.exception("Proxy check failed for %s:%s", proxy.ip, proxy.port)
+                    continue
+                if index == total or index % 50 == 0:
+                    self.logger.info("Completed proxy checks: %s/%s", index, total)
+
+        if self.repository:
+            self._persist_contexts(contexts)
+
+        alive_count = sum(1 for context in contexts if context.proxy.is_alive)
+        self.logger.info(
+            "Finished check batch in %.2fs (contexts=%s alive=%s)",
+            perf_counter() - started_at,
+            len(contexts),
+            alive_count,
+        )
         return contexts
+
+    def _persist_contexts(self, contexts) -> None:
+        alive_contexts = [context for context in contexts if context.proxy.is_alive]
+        self.logger.info("Persisting %s alive proxies to the repository serially", len(alive_contexts))
+        for index, context in enumerate(alive_contexts, start=1):
+            try:
+                self.repository.save_proxy(context.proxy)
+            except Exception:
+                self.logger.exception("Failed to save proxy %s:%s", context.proxy.ip, context.proxy.port)
+            if index == len(alive_contexts) or index % 50 == 0:
+                self.logger.info("Persisted proxies: %s/%s", index, len(alive_contexts))
 
     def _apply_check_result(self, context: CheckContext, result) -> None:
         proxy = context.proxy

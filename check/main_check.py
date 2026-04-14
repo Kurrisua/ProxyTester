@@ -1,12 +1,12 @@
 from collections.abc import Iterable
 
 from check.geo import check_geo_by_ip, check_geo_with_retry
-from collectors.file_collector import FileProxyCollector
+from collectors import DEFAULT_LAST_DATA_PATH, FileProxyCollector
 from services.proxy_check_service import ProxyCheckService
 
 
-def load_proxys(file_path):
-    return FileProxyCollector().collect(file_path)
+def load_proxys(file_path=None):
+    return FileProxyCollector().collect(file_path or str(DEFAULT_LAST_DATA_PATH))
 
 
 def test_one_proxy(proxy):
