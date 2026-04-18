@@ -57,6 +57,18 @@ def get_high_quality_proxies():
         service.close()
 
 
+@proxy_bp.route("/api/proxies/<ip>:<port>", methods=["GET"])
+def get_proxy_detail(ip: str, port: str):
+    service = ProxyQueryService()
+    try:
+        detail = service.get_proxy_detail(ip, int(port))
+        if detail is None:
+            return jsonify({"error": "proxy_not_found", "proxy": f"{ip}:{port}"}), 404
+        return jsonify(detail)
+    finally:
+        service.close()
+
+
 @proxy_bp.route("/api/proxies/<ip>:<port>", methods=["DELETE"])
 def delete_proxy(ip: str, port: str):
     service = ProxyQueryService()
@@ -80,7 +92,7 @@ def refresh_proxies():
     return jsonify(
         {
             "success": True,
-            "message": "刷新任务完成",
+            "message": "refresh_completed",
             "aliveCount": summary["aliveCount"],
             "collectedCount": summary["collectedCount"],
             "jsonRecordCount": summary["jsonRecordCount"],

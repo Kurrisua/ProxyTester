@@ -1,653 +1,615 @@
-# ProxyTester
+# ProxyTester 使用说明
 
-`ProxyTester` 是一个面向代理资源采集、检测、评分、入库和查询展示的一体化项目。  
-项目原本已经具备“代理检测与管理”主流程，这次又把 `new/` 目录下的 Deadpool 抓取项目并入到了统一架构里，使整个系统从“仅检测已有代理”升级为“抓取 + 合并 + 检测 + 入库 + 查询”的自动化流水线。
+ProxyTester 是一个代理采集、检测、评分、入库、查询和可视化平台。当前项目已经从单纯的“代理可用性检测工具”升级为“代理安全研究平台”的基础版本：系统不仅判断代理是否可用，还会记录检测批次、逐阶段检测记录、安全事件、证据、资源观测、证书观测和地理聚合结果，帮助把代理从“可用/不可用”的资源对象升级为“正常/可疑/恶意”的行为研究对象。
 
----
-
-## 1. 项目目的与当前已实现内容
-
-### 1.1 项目目的
-
-这个项目要解决的核心问题是：
-
-- 如何从多个来源持续获得可用代理
-- 如何批量判断这些代理是否真的可用
-- 如何识别代理支持的协议、匿名性、地理位置和业务可用性
-- 如何对代理进行统一评分并保存，供后续筛选和使用
-- 如何通过 API 和前端界面方便地查看、筛选和刷新代理池
-
-换句话说，`ProxyTester` 不只是一个“代理检查脚本”，而是一个完整的代理资产处理系统。
-
-### 1.2 当前已经实现的能力
-
-目前仓库里已经实现了以下能力：
-
-- 从文本文件中读取代理列表
-- 对代理进行多阶段检测
-- 识别 `HTTP`、`HTTPS`、`SOCKS5` 等协议能力
-- 检测匿名性、出口地理位置、业务目标可达性
-- 执行安全插件检查与评分
-- 将结果写入 MySQL
-- 通过 Flask API 查询代理列表、统计信息和高质量代理
-- 通过 React 前端页面查看代理池状态
-- 集成 Deadpool 抓取项目，自动刷新额外的代理种子文件
-- 将多个来源的代理合并、去重、标准化，并统一送入检测流程
-- 增加了运行日志，便于排查每一步的执行状态
-
-### 1.3 这次整合后的统一工作流
-
-当前自动化流程如下：
-
-1. 可选执行 Deadpool 的抓取脚本 `fir.py`
-2. 读取多个代理源文件
-3. 将所有代理按 `ip:port` 去重合并
-4. 生成统一的标准数据集文件
-5. 生成结构化 JSON 数据集
-6. 执行并发检测
-7. 对检测通过的代理串行写入 MySQL
-8. 通过 API 和前端提供查询与刷新能力
+本文档重点说明怎么安装、配置、运行、验证和排错。
 
 ---
 
-## 2. 整体结构与各层次具体职能
+## 1. 当前能力
 
-项目整体上可以理解为七层：
+当前仓库包含以下能力：
 
-1. 入口层
-2. 采集层
-3. 核心抽象层
-4. 检测调度层
-5. 评分与安全层
-6. 持久化层
-7. 展示与接口层
+- 免费代理源采集与合并去重。
+- Deadpool 代理源刷新和本地文件源读取。
+- 基础连通性检测。
+- HTTP、HTTPS、SOCKS5 协议识别。
+- 匿名性、出口地理位置、业务可用性检测。
+- 基础评分和安全评分。
+- MySQL 持久化。
+- 检测批次、检测记录、安全行为事件、证据、资源和证书观测表。
+- Flask API 查询代理、统计、安全总览、批次、事件和国家/地区聚合。
+- 本地蜜罐页面和资源。
+- React + Vite + TypeScript + Tailwind 前端。
+- 前端页面：安全总览、代理列表、代理详情、检测批次、安全事件、世界地图。
+- Python 单元测试和前端 TypeScript 检查。
 
-下面按目录详细说明。
-
-### 2.1 入口层
-
-入口层负责启动整个系统或某条具体流程。
-
-#### `main.py`
-
-统一命令行入口。  
-现在它不再只是读取一个 `lastData.txt` 进行检测，而是负责触发完整自动化流程：
-
-- 可选刷新 Deadpool 抓取结果
-- 合并多个代理源
-- 生成标准数据集和 JSON
-- 执行检测
-- 可选写入数据库
-
-#### `api.py`
-
-后端服务启动入口。  
-运行后会启动 Flask API，供前端或其他脚本调用。
-
-#### `start_all.ps1`
-
-用于同时启动后端和前端开发环境的脚本。
-
-#### `start_servers.bat`
-
-Windows 下的辅助启动脚本。
+当前仍然是安全研究平台的基础版，不是完整的浏览器沙箱或企业级威胁情报系统。高成本检测、复杂多轮浏览器模拟、深度 MITM 研究和更精细的地图交互仍可继续扩展。
 
 ---
 
-### 2.2 采集层 `collectors/`
+## 2. 目录结构
 
-采集层负责定义“代理从哪里来”，以及“采集后的原始文本如何变成统一格式”。
-
-#### `collectors/defaults.py`
-
-定义采集相关的默认路径，包括：
-
-- 主项目标准数据集路径
-- JSON 输出路径
-- Deadpool 项目目录
-- Deadpool 生成的多个源文件路径
-
-这是整个采集层的路径配置中心。
-
-#### `collectors/source_provider.py`
-
-定义默认代理源列表。  
-当前已经纳入的源包括：
-
-- `collectors/data/lastData.txt`
-- `new/.../lastData.txt`
-- `new/.../http.txt`
-- `new/.../git.txt`
-
-也就是说，这里负责告诉系统：“这次要从哪些文件里收代理”。
-
-#### `collectors/file_collector.py`
-
-负责真正读取代理文件，并把文本行解析成 `ProxyModel` 对象。  
-目前支持的基本格式是：
+常用目录如下：
 
 ```text
-IP:PORT source_name
+ProxyTester/
+  api.py                         Flask API 启动入口
+  main.py                        命令行检测流水线入口
+  api/                           Flask 应用工厂和路由
+  checkers/                      基础代理检测器
+  collectors/                    代理源读取、Deadpool 刷新、源合并
+  core/models/                   核心模型、稳定英文枚举、检测结果模型
+  daili/                         前端项目，Vite + React + TypeScript
+  docs/                          项目规划和实施文档
+  honeypot/                      本地蜜罐页面、资源和提交接口
+  migrations/                    MySQL schema migration SQL
+  scheduler/                     检测 pipeline
+  scoring/                       基础评分和安全评分
+  security/                      蜜罐、DOM、资源、MITM、流量等安全检测
+  services/                      工作流服务、查询服务、检测服务
+  storage/mysql/                 MySQL 连接和 repository
+  tests/                         Python 单元测试
 ```
 
-解析失败的行会被跳过，并记录日志。
-
-#### `collectors/transformers/last_data_to_json.py`
-
-把标准化后的 `lastData.txt` 转成结构化 JSON 数据集，便于后续调试、对接或展示。
-
-#### `collectors/deadpool_runner.py`
-
-这是这次新增的重要模块。  
-它专门负责调用并入的 Deadpool 项目中的 `fir.py`，刷新 Deadpool 生成的代理种子文件。
-
-它的职责是：
-
-- 定位 Deadpool 项目目录
-- 执行 `fir.py`
-- 记录 stdout/stderr 摘要
-- 记录运行耗时
-- 在超时或失败时返回结构化结果
-
-这个模块本身不做代理检测，它只负责“刷新代理源”。
-
 ---
 
-### 2.3 核心抽象层 `core/`
-
-核心层提供统一的数据结构和接口定义，让系统各模块能按一致方式协作。
-
-#### `core/interfaces/`
-
-定义系统中的抽象接口，包括：
-
-- 代理源提供器接口
-- 代理采集器接口
-- 数据转换器接口
-- 检测器接口
-- 安全检测器接口
-- 评分器接口
-- 仓储接口
-
-这一层的意义是：后续新增任何模块时，都可以沿着统一协议接入，而不是直接硬编码到业务流程里。
-
-#### `core/models/proxy_model.py`
-
-定义代理的核心数据对象 `ProxyModel`。  
-它承载了整个系统中围绕代理的主要字段，例如：
-
-- IP、端口、来源
-- 是否存活
-- 支持的协议
-- 匿名性
-- 国家、城市、ISP
-- 响应时间
-- 业务评分
-- 质量评分
-- 安全风险
-
-#### `core/models/results.py`
-
-定义每一类检查结果对象，例如：
-
-- 普通检查结果
-- 安全检查结果
-- 评分结果
-
-#### `core/context/check_context.py`
-
-定义检测上下文。  
-每个代理在整条流水线中会携带自己的上下文，逐步累积检查结果、评分结果和最终状态。
-
----
-
-### 2.4 检测调度层 `scheduler/` 与 `checkers/`
-
-这一层负责“代理怎么检测、按什么顺序检测、什么情况下终止后续检测”。
-
-#### `scheduler/check_pipeline.py`
-
-这是核心调度器。  
-它负责：
-
-- 按 `order` 顺序执行检测器
-- 遇到阻断型失败时提前停止
-- 并发执行多个代理的检测
-- 在检测完成后统一执行入库
-
-注意：目前已经修复为“检测并发、入库串行”，避免多线程共享同一个数据库连接导致异常。
-
-#### `checkers/registry.py`
-
-负责注册默认检测器集合。
-
-#### `checkers/connectivity/`
-
-负责基础连通性检测：
-
-- TCP 是否可连
-
-#### `checkers/protocol/`
-
-负责协议能力检测：
-
-- `SOCKS5`
-- `HTTPS`
-- `HTTP`
-- 协议聚合
-
-#### `checkers/anonymity/`
-
-负责匿名性判断。
-
-#### `checkers/geo/`
-
-负责出口地理位置检测和 IP 回退地理位置检测。
-
-#### `checkers/business/`
-
-负责业务目标可达性检测，例如某些站点是否能通过代理访问成功。
-
----
-
-### 2.5 安全与评分层 `security/`、`scoring/`
-
-这一层负责将代理从“可用/不可用”进一步扩展为“质量好不好、风险高不高”。
-
-#### `security/registry.py`
-
-负责自动加载安全插件。
-
-#### `security/plugins/`
-
-目前包含若干安全检测插件，如：
-
-- `honeypot_checker.py`
-- `dom_diff_checker.py`
-- `mitm_checker.py`
-- `traffic_analysis_checker.py`
-
-其中有些还偏占位实现，但接口和加载机制已经完整。
-
-#### `scoring/quality_scorer.py`
-
-根据响应时间、成功率、业务分等信息给出质量评分。
-
-#### `scoring/security_scorer.py`
-
-根据安全插件结果汇总风险等级和风险标记。
-
-#### `scoring/composite_scorer.py`
-
-负责构建默认评分器组合。
-
----
-
-### 2.6 服务层 `services/`
-
-服务层负责把底层模块编排成用户真正会调用的业务流程。
-
-#### `services/proxy_check_service.py`
-
-负责“给一批代理做完整检测”。  
-它的职责包括：
-
-- 构建默认检测器、评分器、安全插件
-- 调用 `CheckPipeline`
-- 返回存活代理
-- 可选写入 MySQL
-
-#### `services/proxy_query_service.py`
-
-负责面向 API 的查询能力，例如：
-
-- 分页列表
-- 筛选条件
-- 统计信息
-- 高质量代理查询
-- 删除代理
-
-#### `services/proxy_workflow_service.py`
-
-这是这次新增的自动化编排核心。  
-它负责把原先分散的步骤串起来：
-
-- 触发 Deadpool 刷新
-- 收集多个代理源
-- 合并和去重
-- 回写标准数据集
-- 生成 JSON
-- 触发完整检测
-- 可选入库
-
-可以把它理解成当前项目的“总导演”。
-
----
-
-### 2.7 持久化层 `storage/`
-
-#### `storage/mysql/connection.py`
-
-负责创建 MySQL 连接。
-
-#### `storage/mysql/proxy_repository.py`
-
-负责代理结果的数据库读写，包括：
-
-- 保存和更新代理
-- 分页查询
-- 统计
-- 删除
-
-注意：现在数据库保存已经由调度器统一串行调用，避免线程安全问题。
-
----
-
-### 2.8 展示与接口层 `api/`、`daili/`
-
-#### `api/`
-
-Flask API 层，提供标准 HTTP 接口。
-
-重点接口：
-
-- `GET /api/proxies`
-- `GET /api/filters`
-- `GET /api/stats`
-- `GET /api/proxies/high-quality`
-- `DELETE /api/proxies/{ip}:{port}`
-- `POST /api/refresh`
-
-其中 `/api/refresh` 已经改为触发整条自动化流程。
-
-#### `daili/`
-
-React + TypeScript 前端目录，用于展示代理统计信息、筛选条件和列表数据。
-
----
-
-### 2.9 并入模块 `new/`
-
-#### `new/proxyxy/Deadpool-proxypool1.5/Deadpool-proxypool1.5`
-
-这是并入的代理抓取项目。  
-它主要负责：
-
-- 通过 `fir.py` 从公开源抓取代理列表
-- 生成 `http.txt`、`git.txt`、`lastData.txt`
-- 通过 `main_modify.go` 提供一个长期驻留的本地 SOCKS 转发监听能力
-
-当前主项目自动化流程集成的是它的批量抓取部分，即 `fir.py`。  
-`main_modify.go` 目前仍作为独立能力保留，不直接纳入主检测流水线。
-
----
-
-## 3. 使用方法
-
-这一部分按“最常见场景”来说明。
-
-### 3.1 环境要求
-
-- Python 3.9+
-- Node.js 18+
-- MySQL 5.7+
-
-### 3.2 安装依赖
-
-后端依赖：
-
-```bash
-pip install flask flask-cors pymysql requests
+## 3. 运行要求
+
+建议环境：
+
+- Windows 10/11 或兼容的 PowerShell 环境。
+- Python 3.10+。
+- Node.js 18+。
+- npm 9+。
+- MySQL 8.0+。
+
+本项目当前默认数据库连接为：
+
+```text
+host: localhost
+port: 3307
+user: root
+database: proxy_pool
+charset: utf8mb4
 ```
 
-前端依赖：
+这些默认值来自 `storage/mysql/connection.py`，可通过环境变量覆盖。
 
-```bash
-cd daili
+---
+
+## 4. 快速启动
+
+下面以 PowerShell 为例。
+
+### 4.1 进入项目目录
+
+```powershell
+cd C:\MyProjects\ProxyTester
+```
+
+### 4.2 创建并启用 Python 虚拟环境
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+```
+
+如果 PowerShell 禁止执行脚本，可以临时允许当前进程执行：
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+```
+
+### 4.3 安装 Python 依赖
+
+项目当前没有统一的 `requirements.txt`，按当前代码使用情况至少需要：
+
+```powershell
+python -m pip install flask flask-cors pymysql requests "requests[socks]"
+```
+
+说明：
+
+- `flask`：启动 API 服务。
+- `flask-cors`：允许前端跨域访问后端。
+- `pymysql`：连接 MySQL。
+- `requests`：执行 HTTP/HTTPS 检测。
+- `requests[socks]`：支持 SOCKS 代理检测。
+
+### 4.4 安装前端依赖
+
+```powershell
+cd C:\MyProjects\ProxyTester\daili
 npm install
+cd C:\MyProjects\ProxyTester
 ```
 
-### 3.3 初始化数据库
+---
 
-```sql
-CREATE DATABASE proxy_pool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+## 5. 配置数据库
 
-USE proxy_pool;
+### 5.1 环境变量
 
-CREATE TABLE proxies (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    ip VARCHAR(45) NOT NULL,
-    port INT NOT NULL,
-    source VARCHAR(128) DEFAULT 'unknown',
-    country VARCHAR(64),
-    city VARCHAR(64),
-    proxy_type VARCHAR(32),
-    anonymity VARCHAR(32),
-    response_time FLOAT,
-    business_score INT DEFAULT 0,
-    success_count INT DEFAULT 0,
-    fail_count INT DEFAULT 0,
-    last_check_time DATETIME,
-    is_alive TINYINT(1) DEFAULT 0,
-    quality_score INT DEFAULT 0,
-    security_risk VARCHAR(32) DEFAULT 'unknown',
-    UNIQUE KEY idx_ip_port (ip, port),
-    INDEX idx_country (country),
-    INDEX idx_proxy_type (proxy_type),
-    INDEX idx_is_alive (is_alive),
-    INDEX idx_quality_score (quality_score)
-);
+后端读取以下环境变量：
+
+```powershell
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "3307"
+$env:DB_USER = "root"
+$env:DB_PASSWORD = "your_password"
+$env:DB_NAME = "proxy_pool"
 ```
 
-### 3.4 配置数据库环境变量
+如果你的 MySQL 没有密码，可以把 `DB_PASSWORD` 设为空字符串：
+
+```powershell
+$env:DB_PASSWORD = ""
+```
+
+### 5.2 创建数据库
+
+如果数据库还不存在，先创建：
+
+```powershell
+$env:MYSQL_PWD = "your_password"
+mysql -h localhost -P 3307 -u root -e "CREATE DATABASE IF NOT EXISTS proxy_pool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+Remove-Item Env:\MYSQL_PWD
+```
+
+如果 root 没有密码，可以省略 `MYSQL_PWD`：
+
+```powershell
+mysql -h localhost -P 3307 -u root -e "CREATE DATABASE IF NOT EXISTS proxy_pool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+### 5.3 执行 migration
+
+数据库结构通过 `migrations/` 目录中的 SQL 文件管理。请按文件名顺序执行：
+
+```text
+migrations/
+  001_extend_proxies_security_fields.sql
+  002_create_security_scan_batches.sql
+  003_create_security_scan_records.sql
+  004_create_security_behavior_events.sql
+  005_create_security_evidence_files.sql
+  006_create_security_certificate_observations.sql
+  007_create_security_resource_observations.sql
+  008_create_proxy_sources.sql
+  009_create_proxy_check_records.sql
+  010_create_honeypot_targets.sql
+  011_create_honeypot_request_logs.sql
+```
+
+执行示例：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+$env:MYSQL_PWD = "your_password"
+Get-ChildItem .\migrations\*.sql | Sort-Object Name | ForEach-Object {
+  Get-Content $_.FullName | mysql -h localhost -P 3307 -u root proxy_pool
+}
+Remove-Item Env:\MYSQL_PWD
+```
+
+如果你的 MySQL root 没有密码：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+Get-ChildItem .\migrations\*.sql | Sort-Object Name | ForEach-Object {
+  Get-Content $_.FullName | mysql -h localhost -P 3307 -u root proxy_pool
+}
+```
+
+重要提醒：
+
+- 如果已有历史数据，执行前建议先备份 `proxies` 表。
+- `proxies` 主表只保存最新汇总状态。
+- 完整检测过程保存在 scan batch、scan record、behavior event、evidence、certificate observation、resource observation 等明细表中。
+- 不要再依赖业务代码启动时隐式改表。
+
+### 5.4 备份 proxies 表
+
+已有数据时建议先做 SQL 备份：
+
+```powershell
+$env:MYSQL_PWD = "your_password"
+mysqldump -h localhost -P 3307 -u root proxy_pool proxies > backups\proxies_backup.sql
+Remove-Item Env:\MYSQL_PWD
+```
+
+也可以根据实际部署策略导出全库：
+
+```powershell
+$env:MYSQL_PWD = "your_password"
+mysqldump -h localhost -P 3307 -u root proxy_pool > backups\proxy_pool_backup.sql
+Remove-Item Env:\MYSQL_PWD
+```
+
+---
+
+## 6. 启动后端 API
+
+后端入口是 `api.py`：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+.\.venv\Scripts\Activate.ps1
+python api.py
+```
+
+默认监听：
+
+```text
+http://localhost:5000
+```
+
+Flask 会注册三组路由：
+
+- 代理查询 API：`/api/...`
+- 安全研究 API：`/api/security/...`
+- 蜜罐资源：`/honeypot/...`
+
+### 6.1 检查 API 是否启动
+
+浏览器或 PowerShell 访问：
+
+```powershell
+Invoke-RestMethod http://localhost:5000/api/stats
+```
+
+如果数据库尚未初始化或连接失败，先检查：
+
+- MySQL 服务是否启动。
+- `DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME` 是否正确。
+- `migrations/` 是否已经按顺序执行。
+
+---
+
+## 7. 启动前端
+
+前端目录是 `daili/`：
+
+```powershell
+cd C:\MyProjects\ProxyTester\daili
+npm run dev
+```
+
+默认访问：
+
+```text
+http://localhost:3000
+```
+
+当前前端 API client 直接访问：
+
+```text
+http://localhost:5000/api
+```
+
+因此本地使用时需要同时启动：
+
+1. Flask API：`python api.py`
+2. Vite 前端：`npm run dev`
+
+---
+
+## 8. 运行代理采集和检测流水线
+
+命令行入口是 `main.py`：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+.\.venv\Scripts\Activate.ps1
+python main.py
+```
+
+完整流程会执行：
+
+1. 可选刷新 Deadpool 外部代理源。
+2. 读取多个代理源文件。
+3. 合并去重。
+4. 生成规范化代理数据。
+5. 执行基础检测。
+6. 执行安全检测插件。
+7. 计算基础评分和安全评分。
+8. 保存 `proxies` 最新汇总状态。
+9. 保存检测批次、检测记录、安全事件、证据和观测数据。
+
+### 8.1 常用参数
+
+跳过外部抓取，只检测本地已有数据：
+
+```powershell
+python main.py --skip-crawl
+```
+
+跳过 Deadpool 源：
+
+```powershell
+python main.py --skip-deadpool-sources
+```
+
+不写入数据库，只做本地验证：
+
+```powershell
+python main.py --skip-db
+```
+
+限制并发，适合第一次小规模验证：
+
+```powershell
+python main.py --skip-crawl --max-workers 20
+```
+
+最小验证命令：
+
+```powershell
+python main.py --skip-crawl --skip-db --max-workers 20
+```
+
+---
+
+## 9. 启用蜜罐和安全检测
+
+安全检测采用漏斗式逐层检测，不会默认对所有代理执行最重检测。当前安全插件会根据代理状态、协议能力和环境变量决定是否执行。
+
+### 9.1 本地蜜罐页面
+
+启动 `python api.py` 后，可访问：
+
+```text
+http://localhost:5000/honeypot/static/basic
+```
+
+蜜罐 manifest：
+
+```text
+http://localhost:5000/honeypot/manifest
+```
+
+蜜罐资源：
+
+```text
+http://localhost:5000/honeypot/assets/site.css
+http://localhost:5000/honeypot/assets/site.js
+http://localhost:5000/honeypot/assets/pixel.txt
+```
+
+### 9.2 开启 HTML/DOM 和资源完整性检测
+
+设置 `HONEYPOT_BASE_URL`：
+
+```powershell
+$env:HONEYPOT_BASE_URL = "http://127.0.0.1:5000/honeypot/static/basic"
+$env:HONEYPOT_TIMEOUT_SECONDS = "10"
+```
+
+然后运行检测：
+
+```powershell
+python main.py --skip-crawl --max-workers 20
+```
+
+如果没有设置 `HONEYPOT_BASE_URL`，相关检测会生成 `skipped` 或 `not_applicable` 语义，而不是把“未检测”当成安全。
+
+### 9.3 开启 HTTPS / SOCKS MITM 证书观测
+
+设置 HTTPS 目标：
+
+```powershell
+$env:MITM_TARGET_URL = "https://example.com/"
+$env:MITM_TIMEOUT_SECONDS = "10"
+```
+
+也可以使用：
+
+```powershell
+$env:HONEYPOT_HTTPS_URL = "https://example.com/"
+```
+
+注意：
+
+- 纯 HTTP 代理不应被解释为“MITM 正常”，应记录为 `not_applicable`。
+- 证书检测失败、网络失败、超时和证书异常会区分记录。
+- 高成本检测应优先用于高可用、可疑、高价值或抽样代理。
+
+---
+
+## 10. 前端页面怎么用
+
+启动后端和前端后，打开：
+
+```text
+http://localhost:3000
+```
+
+主要页面：
+
+```text
+/overview              安全总览
+/proxies               代理列表
+/proxies/:ip/:port     代理详情
+/batches               检测批次
+/events                安全事件
+/map                   世界地图
+```
+
+### 10.1 安全总览
+
+安全总览用于查看整体风险态势：
+
+- 代理数量。
+- 活跃代理数量。
+- 未检测数量。
+- 正常、可疑、恶意或高风险代理分布。
+- 检测批次趋势。
+- 行为事件分布。
+
+### 10.2 代理列表
+
+代理列表用于筛选和查看代理最新状态。内部状态使用稳定英文枚举，前端负责展示中文。
+
+常见状态：
+
+```text
+alive   存活
+slow    较慢
+dead    失效
+```
+
+常见匿名级别：
+
+```text
+high_anonymous  高匿
+anonymous       匿名
+transparent     透明
+unknown         未知
+```
+
+### 10.3 代理详情
+
+代理详情页用于查看单个代理：
+
+- 基础状态。
+- 协议能力。
+- 响应时间。
+- 评分。
+- 安全风险。
+- 漏斗式检测路径。
+- 关联检测记录。
+- 关联安全事件。
+
+### 10.4 检测批次
+
+检测批次页用于查看每次 pipeline 运行：
+
+- 批次 ID。
+- 开始时间和结束时间。
+- 代理总量。
+- 完成、跳过、错误、超时数量。
+- 检测记录摘要。
+
+### 10.5 安全事件
+
+安全事件页用于查看异常行为：
+
+- 内容篡改。
+- 广告注入。
+- 脚本注入。
+- 跳转操纵。
+- 资源替换。
+- MITM 可疑。
+- 隐蔽恶意行为。
+- 非恶意但不稳定行为。
+
+### 10.6 世界地图
+
+世界地图页按国家/地区聚合代理安全态势。第一版聚合维度包括：
+
+- 代理总数。
+- 活跃数量。
+- 未检测数量。
+- 正常、可疑、恶意数量。
+- 平均响应时间。
+- 协议分布。
+- 最高风险等级。
+- 主要异常类型。
+
+点击国家/地区后，可进入筛选后的代理列表或事件列表。
+
+---
+
+## 11. API 使用
+
+后端默认地址：
+
+```text
+http://localhost:5000
+```
+
+### 11.1 代理列表
+
+```http
+GET /api/proxies?page=1&limit=20
+```
+
+可选查询参数：
+
+```text
+country              国家/地区
+type                 协议类型
+status               alive | slow | dead
+min_business_score   最低业务评分
+sort                 response_time 等排序字段
+page                 页码
+limit                每页数量
+```
 
 PowerShell 示例：
 
 ```powershell
-$env:DB_HOST="localhost"
-$env:DB_PORT="3307"
-$env:DB_USER="root"
-$env:DB_PASSWORD="your_password"
-$env:DB_NAME="proxy_pool"
+Invoke-RestMethod "http://localhost:5000/api/proxies?page=1&limit=20"
 ```
 
-### 3.5 准备代理源文件
+### 11.2 代理详情
 
-标准文件格式：
-
-```text
-IP:PORT source_name
+```http
+GET /api/proxies/<ip>:<port>
 ```
 
-例如：
-
-```text
-192.168.1.1:8080 from_file
-10.0.0.1:3128 api_source
-```
-
-主项目标准数据文件位置：
-
-- `collectors/data/lastData.txt`
-
-### 3.6 运行命令行自动化流程
-
-最完整方式：
-
-```bash
-python main.py
-```
-
-常用参数：
-
-```bash
-python main.py --skip-crawl
-python main.py --skip-deadpool-sources
-python main.py --skip-db
-python main.py --max-workers 200
-```
-
-参数说明：
-
-- `--skip-crawl`
-  - 跳过 Deadpool 抓取刷新
-- `--skip-deadpool-sources`
-  - 不读取 Deadpool 生成的代理文件
-- `--skip-db`
-  - 做完整检测，但不把结果写入 MySQL
-- `--max-workers`
-  - 设置检测并发数
-
-建议的运行顺序：
-
-1. 先跳过抓取和入库，确认检测流程正常
-
-```bash
-python main.py --skip-crawl --skip-db --max-workers 50
-```
-
-2. 再开启入库
-
-```bash
-python main.py --skip-crawl --max-workers 50
-```
-
-3. 最后再跑完整自动化
-
-```bash
-python main.py --max-workers 50
-```
-
-### 3.7 启动 API
-
-```bash
-python api.py
-```
-
-### 3.8 启动前端
-
-```bash
-cd daili
-npm run dev
-```
-
-### 3.9 一键启动前后端
+示例：
 
 ```powershell
-.\start_all.ps1
+Invoke-RestMethod "http://localhost:5000/api/proxies/1.2.3.4:8080"
 ```
 
----
+### 11.3 删除代理
 
-## 4. 新增模块的操作方法
-
-这一部分重点说明本次新增和变化较大的模块应该怎么使用。
-
-### 4.1 `services/proxy_workflow_service.py`
-
-这是新的主流程编排器。  
-如果你在代码里想手动调用完整自动化流程，可以这样用：
-
-```python
-from services.proxy_workflow_service import ProxyWorkflowService
-
-summary = ProxyWorkflowService().run_automated_workflow(
-    refresh_external_sources=True,
-    include_deadpool_sources=True,
-    max_workers=150,
-    save_to_db=True,
-)
-
-print(summary)
+```http
+DELETE /api/proxies/<ip>:<port>
 ```
 
-返回结果中会包含：
+示例：
 
-- `refreshSummary`
-- `sources`
-- `sourceCount`
-- `collectedCount`
-- `aliveCount`
-- `canonicalFile`
-- `jsonFile`
-- `jsonRecordCount`
-- `elapsedSeconds`
-
-适合场景：
-
-- 你想从 Python 代码里直接触发整套自动化
-- 你想后续接定时任务
-- 你想在别的服务里嵌入这条流程
-
-### 4.2 `collectors/deadpool_runner.py`
-
-这个模块用于刷新 Deadpool 的代理种子文件。
-
-基本用法：
-
-```python
-from collectors.deadpool_runner import DeadpoolSeedRunner
-
-result = DeadpoolSeedRunner().run(timeout_seconds=180)
-print(result)
+```powershell
+Invoke-RestMethod -Method Delete "http://localhost:5000/api/proxies/1.2.3.4:8080"
 ```
 
-它会执行：
+### 11.4 统计信息
 
-- `new/proxyxy/Deadpool-proxypool1.5/Deadpool-proxypool1.5/fir.py`
-
-执行完成后主要影响的文件是：
-
-- `new/.../http.txt`
-- `new/.../git.txt`
-- `new/.../lastData.txt`
-
-适合场景：
-
-- 只想刷新抓取结果，不做检测
-- 调试 Deadpool 抓取阶段是否正常
-
-### 4.3 `collectors/source_provider.py`
-
-如果你想新增新的代理源，最直接的方式就是在这里追加新的 `ProxySourceDefinition`。
-
-例如你想再增加一个文件源：
-
-```python
-ProxySourceDefinition(
-    name="extra_file",
-    kind="file",
-    location="C:/path/to/proxies.txt",
-    description="Extra local proxy file",
-    metadata={"format": "ip:port source_name"},
-)
+```http
+GET /api/stats
 ```
 
-新增后，统一自动化流程会自动把它纳入合并与检测。
+示例：
 
-### 4.4 `collectors/file_collector.py`
-
-如果新增的是“文本文件代理源”，通常不需要额外改采集逻辑，只要文件格式符合：
-
-```text
-IP:PORT source_name
+```powershell
+Invoke-RestMethod "http://localhost:5000/api/stats"
 ```
 
-就能直接被这个 collector 处理。
+### 11.5 筛选项
 
-### 4.5 `collectors/transformers/last_data_to_json.py`
-
-如果你只想把标准数据文件转成 JSON，而不跑完整检测，可以单独调用：
-
-```bash
-python -c "from collectors import DEFAULT_LAST_DATA_PATH, DEFAULT_LAST_DATA_JSON_PATH, LastDataJsonTransformer; LastDataJsonTransformer().transform(str(DEFAULT_LAST_DATA_PATH), str(DEFAULT_LAST_DATA_JSON_PATH))"
+```http
+GET /api/filters
 ```
 
-### 4.6 `/api/refresh` 接口
+### 11.6 高质量代理
 
-这个接口现在不是简单重新读取文件，而是执行完整自动化流程。
+```http
+GET /api/proxies/high-quality?min_score=2&limit=10
+```
 
-示例请求体：
+### 11.7 触发刷新
+
+```http
+POST /api/refresh
+```
+
+请求体示例：
 
 ```json
 {
@@ -658,164 +620,426 @@ python -c "from collectors import DEFAULT_LAST_DATA_PATH, DEFAULT_LAST_DATA_JSON
 }
 ```
 
-适合场景：
+PowerShell 示例：
 
-- 前端点击刷新
-- 外部脚本远程触发
-- 后续接入定时任务系统
+```powershell
+$body = @{
+  refreshCrawler = $true
+  includeDeadpoolSources = $true
+  maxWorkers = 50
+  saveToDb = $true
+} | ConvertTo-Json
 
-### 4.7 日志模块 `utils/logging_config.py`
-
-项目现在已经内置日志配置，默认会同时输出到：
-
-- 控制台
-- `logs/proxytester.log`
-
-日志覆盖阶段包括：
-
-- Deadpool 刷新
-- 代理文件读取
-- JSON 生成
-- 批量检测
-- 数据库保存
-- 主流程耗时
-
-如果你要排查流程卡住在哪一步，优先看这个日志文件。
-
----
-
-## 5. 输出文件与数据流转说明
-
-### 5.1 输入侧
-
-当前代理输入可能来自这些文件：
-
-- `collectors/data/lastData.txt`
-- `new/.../lastData.txt`
-- `new/.../http.txt`
-- `new/.../git.txt`
-
-### 5.2 中间产物
-
-合并去重后的标准数据集：
-
-- `collectors/data/lastData.txt`
-
-结构化 JSON：
-
-- `collectors/data/lastData.json`
-
-### 5.3 日志文件
-
-- `logs/proxytester.log`
-
-### 5.4 数据库存储
-
-最终检测结果会进入 MySQL 的 `proxies` 表。
-
----
-
-## 6. 如何新增模块
-
-### 6.1 新增检测器
-
-步骤：
-
-1. 在 `checkers/` 下新增检测器文件
-2. 继承 `BaseChecker`
-3. 实现 `supports()` 和 `check()`
-4. 在 `checkers/registry.py` 中注册
-5. 如有必要，在调度器中处理结果字段映射
-
-### 6.2 新增安全插件
-
-步骤：
-
-1. 在 `security/plugins/` 下新增插件
-2. 继承 `BaseSecurityChecker`
-3. 实现 `supports()` 和 `check()`
-4. 插件会被自动发现和加载
-
-### 6.3 新增评分器
-
-步骤：
-
-1. 在 `scoring/` 下新增评分器
-2. 继承 `BaseScorer`
-3. 在 `scoring/composite_scorer.py` 中注册
-
-### 6.4 新增代理源
-
-步骤：
-
-1. 在 `collectors/source_provider.py` 中增加源定义
-2. 如果是文本文件源，通常不需要改采集器
-3. 如果是新类型源，可扩展新的 collector
-
-### 6.5 新增持久化实现
-
-如果后续需要支持 PostgreSQL、ClickHouse 等，可以新增仓储实现并替换 `MySQLProxyRepository`。
-
----
-
-## 7. 日志与故障排查
-
-### 7.1 常见日志位置
-
-- 控制台输出
-- `logs/proxytester.log`
-
-### 7.2 常见问题
-
-#### Deadpool 刷新很慢
-
-可能原因：
-
-- 公开源响应慢
-- 网络超时
-- 抓取量较大
-
-临时绕过：
-
-```bash
-python main.py --skip-crawl
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:5000/api/refresh" `
+  -ContentType "application/json" `
+  -Body $body
 ```
 
-#### 检测可以跑，但不想入库
+### 11.8 安全总览
 
-```bash
-python main.py --skip-db
+```http
+GET /api/security/overview
 ```
 
-#### 想最小化验证主流程
+### 11.9 检测批次
 
-```bash
+```http
+GET /api/security/batches?page=1&limit=20
+GET /api/security/scans?page=1&limit=20
+```
+
+两者当前都返回批次列表。
+
+### 11.10 批次详情
+
+```http
+GET /api/security/batches/<batch_id>?recordLimit=100
+GET /api/security/scans/<batch_id>?recordLimit=100
+```
+
+### 11.11 安全事件
+
+```http
+GET /api/security/events?page=1&limit=20
+```
+
+可选查询参数：
+
+```text
+eventType    行为事件类型
+riskLevel    unknown | low | medium | high | critical
+country      国家/地区
+```
+
+### 11.12 国家/地区聚合
+
+```http
+GET /api/security/geo
+```
+
+---
+
+## 12. 稳定状态枚举
+
+项目内部状态使用英文枚举，前端负责中文展示。
+
+### 12.1 Applicability
+
+```text
+applicable
+not_applicable
+unknown
+```
+
+### 12.2 ExecutionStatus
+
+```text
+planned
+running
+completed
+skipped
+error
+timeout
+```
+
+### 12.3 ScanOutcome
+
+```text
+normal
+anomalous
+not_applicable
+skipped
+error
+timeout
+```
+
+### 12.4 RiskLevel
+
+```text
+unknown
+low
+medium
+high
+critical
+```
+
+### 12.5 BehaviorClass
+
+```text
+normal
+content_tampering
+ad_injection
+script_injection
+redirect_manipulation
+resource_replacement
+mitm_suspected
+stealthy_malicious
+unstable_but_non_malicious
+```
+
+关键语义：
+
+- `normal` 表示已执行且没有发现异常。
+- `not_applicable` 表示检测条件不适用，例如 HTTP 代理不适合被标记为 MITM 正常。
+- `skipped` 表示本轮有意跳过，例如未配置目标 URL 或漏斗前置条件不满足。
+- `error` 表示执行失败。
+- `timeout` 表示明确超时。
+- 未检测永远不能被当成安全。
+
+---
+
+## 13. 测试和构建
+
+### 13.1 后端单元测试
+
+```powershell
+cd C:\MyProjects\ProxyTester
+.\.venv\Scripts\Activate.ps1
+python -m unittest discover -s tests
+```
+
+### 13.2 前端类型检查
+
+```powershell
+cd C:\MyProjects\ProxyTester\daili
+npm run lint
+```
+
+当前 `lint` 实际执行的是：
+
+```text
+tsc --noEmit
+```
+
+### 13.3 前端生产构建
+
+```powershell
+cd C:\MyProjects\ProxyTester\daili
+npm run build
+```
+
+构建产物会输出到 Vite 默认目录：
+
+```text
+daili/dist/
+```
+
+### 13.4 前端本地预览
+
+```powershell
+cd C:\MyProjects\ProxyTester\daili
+npm run preview
+```
+
+---
+
+## 14. 常见使用场景
+
+### 14.1 只想打开前端看已有数据库数据
+
+终端 1：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+.\.venv\Scripts\Activate.ps1
+python api.py
+```
+
+终端 2：
+
+```powershell
+cd C:\MyProjects\ProxyTester\daili
+npm run dev
+```
+
+浏览器打开：
+
+```text
+http://localhost:3000
+```
+
+### 14.2 第一次小规模检测
+
+先启动 API，让本地蜜罐可访问：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+.\.venv\Scripts\Activate.ps1
+python api.py
+```
+
+另开一个终端：
+
+```powershell
+cd C:\MyProjects\ProxyTester
+.\.venv\Scripts\Activate.ps1
+$env:HONEYPOT_BASE_URL = "http://127.0.0.1:5000/honeypot/static/basic"
+python main.py --skip-crawl --max-workers 20
+```
+
+### 14.3 只验证代码不写数据库
+
+```powershell
 python main.py --skip-crawl --skip-db --max-workers 20
 ```
 
-#### 数据库出错
+### 14.4 触发一次完整刷新
 
-优先检查：
+```powershell
+python main.py --max-workers 150
+```
 
-- 环境变量是否正确
-- MySQL 服务是否正常
-- `proxy_pool.proxies` 表是否已创建
+这会尝试刷新外部源、合并数据、检测并写入数据库。
+
+### 14.5 通过 API 刷新
+
+```powershell
+$body = @{
+  refreshCrawler = $true
+  includeDeadpoolSources = $true
+  maxWorkers = 50
+  saveToDb = $true
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:5000/api/refresh" `
+  -ContentType "application/json" `
+  -Body $body
+```
 
 ---
 
-## 8. 当前已知限制
+## 15. 排错
 
-- Deadpool 集成的主要是批量抓取部分，长期驻留的 Go SOCKS 监听模式还未纳入统一自动化
-- 某些安全插件仍偏占位实现
-- 当前主要持久化目标仍是 MySQL
-- 代理来源质量波动较大，最终可用率依赖外部源质量
+### 15.1 前端页面没有数据
+
+检查顺序：
+
+1. `python api.py` 是否正在运行。
+2. 浏览器能否访问 `http://localhost:5000/api/stats`。
+3. MySQL 是否启动。
+4. 数据库是否执行过 migration。
+5. `proxies` 表里是否已有数据。
+6. 浏览器开发者工具里是否有跨域或网络错误。
+
+### 15.2 API 连接数据库失败
+
+检查：
+
+```powershell
+$env:DB_HOST
+$env:DB_PORT
+$env:DB_USER
+$env:DB_PASSWORD
+$env:DB_NAME
+```
+
+也可以直接测试 MySQL：
+
+```powershell
+mysql -h localhost -P 3307 -u root -p proxy_pool
+```
+
+### 15.3 SOCKS5 检测报错
+
+确认安装了 SOCKS 支持：
+
+```powershell
+python -m pip install "requests[socks]"
+```
+
+### 15.4 安全检测一直 skipped
+
+常见原因：
+
+- 没有设置 `HONEYPOT_BASE_URL`。
+- 没有设置 `MITM_TARGET_URL` 或 `HONEYPOT_HTTPS_URL`。
+- 代理不支持相关协议。
+- 漏斗前置条件不满足，例如基础连通性失败。
+
+检查环境变量：
+
+```powershell
+$env:HONEYPOT_BASE_URL
+$env:MITM_TARGET_URL
+$env:HONEYPOT_HTTPS_URL
+```
+
+### 15.5 Deadpool 刷新很慢
+
+外部代理源质量和响应速度波动较大。可以先跳过抓取：
+
+```powershell
+python main.py --skip-crawl
+```
+
+也可以降低并发做排查：
+
+```powershell
+python main.py --skip-crawl --max-workers 20
+```
+
+### 15.6 端口被占用
+
+Flask 默认使用 5000，Vite 默认使用 3000。
+
+检查端口占用：
+
+```powershell
+netstat -ano | findstr :5000
+netstat -ano | findstr :3000
+```
 
 ---
 
-## 9. 后续建议
+## 16. 开发扩展
 
-- 把 Deadpool 的敏感配置从 `config.toml` 迁移到环境变量
-- 为 `ProxyWorkflowService` 增加单元测试
-- 增加定时任务或调度器，周期性运行自动化流程
-- 为前端增加刷新任务状态展示
-- 后续可将 Go 侧监听模式拆成独立可选服务
+### 16.1 新增基础 checker
+
+建议步骤：
+
+1. 在 `checkers/` 下选择合适子目录新增 checker。
+2. 返回稳定的 `CheckResult`。
+3. 明确 `applicability`、`execution_status`、`outcome`、`skip_reason` 和 `funnel_stage`。
+4. 在 `checkers/registry.py` 注册。
+5. 为 checker 增加最小测试。
+
+### 16.2 新增安全 checker
+
+建议步骤：
+
+1. 在 `security/plugins/` 下新增插件。
+2. 遵守漏斗式检测原则，不要默认执行高成本检测。
+3. 不适用时返回 `not_applicable`。
+4. 条件不足时返回 `skipped`。
+5. 超时、网络错误、内容异常、证书异常要分开表达。
+6. 在 `security/registry.py` 注册。
+7. 如果会生成行为事件，使用稳定 `BehaviorClass`。
+
+### 16.3 新增 repository
+
+当前 MySQL repository 位于：
+
+```text
+storage/mysql/
+```
+
+如需支持其他数据库，应保持服务层契约不变，新增 repository 实现，而不是把 SQL 写入 pipeline。
+
+### 16.4 新增前端页面
+
+前端结构位于：
+
+```text
+daili/src/
+  app/
+  api/
+  components/
+  features/
+  lib/
+  types/
+```
+
+建议：
+
+1. API 调用放入 `api/`。
+2. 类型放入 `types/`。
+3. 页面和业务组件放入 `features/`。
+4. 枚举中文展示放入 label map，不要把中文状态传回后端。
+5. `App.tsx` 只保留应用组合入口。
+
+---
+
+## 17. 当前限制
+
+- 迁移文件已经完整提供，但当前没有独立 migration runner，需要手动按顺序执行 SQL。
+- 前端 API base URL 当前固定为 `http://localhost:5000/api`。
+- 高成本检测应谨慎启用，避免对所有代理无差别执行。
+- 代理源质量受外部公开源波动影响，检测结果数量会随时间变化。
+- 世界地图第一版以国家/地区聚合为主，不做城市级定位。
+- 未配置蜜罐或 HTTPS 目标时，相关安全检测会跳过，这是正确语义，不代表代理安全。
+
+---
+
+## 18. 推荐日常工作流
+
+开发和验证时建议按这个顺序：
+
+1. 启动 MySQL。
+2. 设置 `DB_*` 环境变量。
+3. 确认 migration 已执行。
+4. 启动 Flask API：`python api.py`。
+5. 设置 `HONEYPOT_BASE_URL`。
+6. 小规模运行：`python main.py --skip-crawl --max-workers 20`。
+7. 启动前端：`npm run dev`。
+8. 查看 `/overview`、`/proxies`、`/batches`、`/events`、`/map`。
+9. 运行后端测试：`python -m unittest discover -s tests`。
+10. 运行前端检查：`npm run lint`。
+11. 需要生产构建时运行：`npm run build`。
+
+---
+
+## 19. 一句话定位
+
+ProxyTester 的下一阶段目标，是把代理从“可用/不可用”的资源对象，升级为“正常/可疑/恶意”的行为研究对象。

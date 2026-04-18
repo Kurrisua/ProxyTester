@@ -25,13 +25,21 @@ def requests_proxies(ip: str, port: int, proxy_type: str | None = None) -> dict 
     }
 
 
-def timed_get(url: str, *, proxies: dict | None = None, timeout: int = 10, allow_redirects: bool = True):
+def timed_get(
+    url: str,
+    *,
+    proxies: dict | None = None,
+    timeout: int = 10,
+    allow_redirects: bool = True,
+    headers: dict | None = None,
+):
     started = time.time()
     response = requests.get(
         url,
         proxies=proxies,
         timeout=timeout,
         allow_redirects=allow_redirects,
+        headers=headers,
     )
     latency_ms = (time.time() - started) * 1000
     return response, latency_ms

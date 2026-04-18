@@ -1,0 +1,7 @@
+interface:
+  display_name: "UI/UX Pro Max"
+  short_description: "Design, build, review, and polish professional front-end interfaces."
+  default_prompt: "Use $ui-ux-pro-max to design and implement a polished, responsive front-end UI."
+
+policy:
+  allow_implicit_invocation: true
