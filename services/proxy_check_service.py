@@ -14,6 +14,7 @@ class ProxyCheckService:
     def __init__(self, repository=None, scan_repository=None):
         self.repository = repository
         self.scan_repository = scan_repository
+        self.last_batch_id: str | None = None
         self.logger = logging.getLogger(__name__)
 
     def load_from_file(self, file_path: str | None = None):
@@ -50,6 +51,7 @@ class ProxyCheckService:
             max_workers=max_workers,
         )
         contexts = pipeline.run_batch(proxies)
+        self.last_batch_id = pipeline.last_batch_id
         alive = [context.proxy for context in contexts if context.proxy.is_alive]
         self.logger.info("Full proxy check completed: %s/%s proxies alive", len(alive), total)
         if save_to_db and repository is not None:

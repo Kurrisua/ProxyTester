@@ -48,7 +48,7 @@ export function FunnelStepper({ steps }: { steps: FunnelStep[] }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-medium uppercase tracking-normal">阶段 {step.funnelStage}</div>
-                <div className="mt-1 text-sm font-semibold">{step.stage}</div>
+                <div className="mt-1 text-sm font-semibold">{formatStageLabel(step.stage)}</div>
               </div>
               <Icon className="h-4 w-4 shrink-0" />
             </div>
@@ -62,4 +62,18 @@ export function FunnelStepper({ steps }: { steps: FunnelStep[] }) {
       })}
     </div>
   );
+}
+
+export function formatStageLabel(stage: string) {
+  const labels: Record<string, string> = {
+    connectivity: '基础连通性',
+    protocol: '协议识别',
+    honeypot: '轻量蜜罐',
+    dom_diff: 'DOM / HTML',
+    resource_integrity: '资源完整性',
+    mitm: 'MITM 检测',
+    dynamic_observation: '多轮观测',
+    security_scoring: '行为评分',
+  };
+  return labels[stage] ?? stage;
 }

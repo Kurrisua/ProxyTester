@@ -9,7 +9,6 @@ import { ANONYMITY_LABELS, BEHAVIOR_CLASS_LABELS, PROXY_STATUS_LABELS, RISK_LEVE
 import { DashboardStats, ProxyNode, ProxyStatus } from '../../../types';
 
 const PAGE_SIZE = 10;
-
 const STATUS_OPTIONS: Array<{ value: '' | ProxyStatus; label: string }> = [
   { value: '', label: '全部状态' },
   { value: 'alive', label: '存活' },
@@ -45,7 +44,6 @@ export function ProxyListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
 
   async function loadPage() {
@@ -56,7 +54,7 @@ export function ProxyListPage() {
       setProxies(result.data ?? []);
       setTotal(result.total ?? 0);
     } catch {
-      setError('代理列表加载失败，请确认 Flask API 是否可用。');
+      setError('代理列表加载失败，请确认 Flask API 可用。');
       setProxies([]);
     } finally {
       setLoading(false);
@@ -80,9 +78,7 @@ export function ProxyListPage() {
         setCountries(filterData.countries ?? []);
         setProxyTypes(filterData.proxyTypes ?? []);
       })
-      .catch(() => {
-        setError('基础统计或筛选项加载失败。');
-      });
+      .catch(() => setError('基础统计或筛选项加载失败。'));
   }, []);
 
   useEffect(() => {
@@ -187,9 +183,7 @@ function Select({ label, value, onChange, children }: { label: string; value: st
 }
 
 function ProxyTable({ proxies, onDelete }: { proxies: ProxyNode[]; onDelete: (proxy: ProxyNode) => void }) {
-  if (proxies.length === 0) {
-    return <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500">暂无代理数据</div>;
-  }
+  if (proxies.length === 0) return <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-500">暂无代理数据</div>;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
@@ -204,7 +198,6 @@ function ProxyTable({ proxies, onDelete }: { proxies: ProxyNode[]; onDelete: (pr
             <th className="px-4 py-3">速度</th>
             <th className="px-4 py-3">安全风险</th>
             <th className="px-4 py-3">行为分类</th>
-            <th className="px-4 py-3">触发模式</th>
             <th className="px-4 py-3">异常/检测</th>
             <th className="px-4 py-3">状态</th>
             <th className="px-4 py-3">最后检测</th>
@@ -221,29 +214,16 @@ function ProxyTable({ proxies, onDelete }: { proxies: ProxyNode[]; onDelete: (pr
               </td>
               <td className="px-4 py-3 text-zinc-600">{proxy.source}</td>
               <td className="px-4 py-3 text-zinc-600">{proxy.location.country}, {proxy.location.city}</td>
-              <td className="px-4 py-3">
-                <div className="flex flex-wrap gap-1">
-                  {proxy.types.map((type) => <Badge key={type} tone="info">{type}</Badge>)}
-                </div>
-              </td>
+              <td className="px-4 py-3"><div className="flex flex-wrap gap-1">{proxy.types.map((type) => <Badge key={type} tone="info">{type}</Badge>)}</div></td>
               <td className="px-4 py-3">{ANONYMITY_LABELS[proxy.anonymity] ?? ANONYMITY_LABELS.unknown}</td>
               <td className="px-4 py-3">{proxy.speed > 0 ? `${proxy.speed}ms` : '超时'}</td>
-              <td className="px-4 py-3">
-                <Badge tone={riskTone(proxy.securityRisk)}>{RISK_LEVEL_LABELS[proxy.securityRisk] ?? proxy.securityRisk}</Badge>
-              </td>
+              <td className="px-4 py-3"><Badge tone={riskTone(proxy.securityRisk)}>{RISK_LEVEL_LABELS[proxy.securityRisk] ?? proxy.securityRisk}</Badge></td>
               <td className="px-4 py-3">{BEHAVIOR_CLASS_LABELS[proxy.behaviorClass] ?? proxy.behaviorClass}</td>
-              <td className="px-4 py-3 text-zinc-600">{proxy.securitySummary?.triggerPattern ?? 'not_observed'}</td>
-              <td className="px-4 py-3 text-zinc-600">
-                {proxy.securitySummary?.anomalyTriggerCount ?? 0} / {proxy.securitySummary?.securityCheckCount ?? 0}
-              </td>
-              <td className="px-4 py-3">
-                <Badge tone={statusTone(proxy.status)}>{PROXY_STATUS_LABELS[proxy.status]}</Badge>
-              </td>
+              <td className="px-4 py-3 text-zinc-600">{proxy.securitySummary?.anomalyTriggerCount ?? 0} / {proxy.securitySummary?.securityCheckCount ?? 0}</td>
+              <td className="px-4 py-3"><Badge tone={statusTone(proxy.status)}>{PROXY_STATUS_LABELS[proxy.status]}</Badge></td>
               <td className="px-4 py-3 text-zinc-600">{proxy.lastCheck}</td>
               <td className="px-4 py-3 text-right">
-                <Link className="mr-2 inline-flex rounded-lg px-2 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50" to={`/proxies/${encodeURIComponent(proxy.ip)}/${proxy.port}`}>
-                  详情
-                </Link>
+                <Link className="mr-2 inline-flex rounded-lg px-2 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50" to={`/proxies/${encodeURIComponent(proxy.ip)}/${proxy.port}`}>详情</Link>
                 <button className="inline-flex rounded-lg p-2 text-zinc-500 hover:bg-rose-50 hover:text-rose-700" onClick={() => onDelete(proxy)} aria-label={`删除 ${proxy.ip}:${proxy.port}`}>
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -254,7 +234,7 @@ function ProxyTable({ proxies, onDelete }: { proxies: ProxyNode[]; onDelete: (pr
       </table>
       <div className="flex items-center gap-2 border-t border-zinc-200 px-4 py-3 text-xs text-zinc-500">
         <ShieldCheck className="h-4 w-4 text-emerald-600" />
-        未检测不会显示为安全；风险为 unknown 时表示尚无完成的安全检测结论。
+        未检测不会显示为安全；风险为 unknown 表示尚无完成的安全检测结论。
       </div>
     </div>
   );

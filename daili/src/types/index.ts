@@ -68,6 +68,9 @@ export interface ProxyQuery {
   sort?: string;
   page?: number;
   limit?: number;
+  securityRisk?: RiskLevel | '';
+  behaviorClass?: BehaviorClass | '';
+  riskTag?: string;
 }
 
 export interface DashboardStats {
@@ -191,12 +194,19 @@ export interface SecurityBatchListResponse {
 
 export interface SecurityEvent {
   id: number;
+  recordId?: number | null;
+  batchId?: number | string | null;
+  proxyId?: number | null;
   eventType: string;
   behaviorClass?: string | null;
   riskLevel: RiskLevel;
   confidence?: number | null;
   targetUrl?: string | null;
+  targetType?: string | null;
   selector?: string | null;
+  affectedResourceUrl?: string | null;
+  externalDomain?: string | null;
+  evidence?: Record<string, unknown> | null;
   summary?: string | null;
   createdAt?: string | null;
 }
@@ -266,6 +276,84 @@ export interface GeoCountrySummary {
   };
   topRiskLevel: RiskLevel;
   topEventTypes: SecurityTopEvent[];
+}
+
+export interface GeoRegionDetail {
+  summary: GeoCountrySummary;
+  topProxies: Array<{
+    proxy: string;
+    ip: string;
+    port: number;
+    proxyType?: string | null;
+    isAlive: boolean;
+    responseTime?: number | null;
+    securityRisk?: RiskLevel | null;
+    behaviorClass?: BehaviorClass | string | null;
+    riskTags: string[];
+    lastSecurityCheckTime?: string | null;
+  }>;
+  recentEvents: SecurityEvent[];
+}
+
+export interface SecurityEvidenceFile {
+  id: number;
+  recordId?: number | null;
+  eventId?: number | null;
+  proxyId?: number | null;
+  evidenceType: string;
+  storagePath: string;
+  sha256?: string | null;
+  sizeBytes?: number | null;
+  mimeType?: string | null;
+  summary?: string | null;
+  createdAt?: string | null;
+}
+
+export interface SecurityEventDetail {
+  event: SecurityEvent;
+  proxy: {
+    ip?: string | null;
+    port?: number | null;
+    country?: string | null;
+    proxyType?: string | null;
+  };
+  record: {
+    id?: number | null;
+    stage?: string | null;
+    checkerName?: string | null;
+    funnelStage?: number | null;
+    outcome?: ScanOutcome | string | null;
+    executionStatus?: ExecutionStatus | string | null;
+    riskTags?: string[];
+  };
+  evidenceFiles: SecurityEvidenceFile[];
+}
+
+export interface HoneypotTarget {
+  name: string;
+  path: string;
+  url: string;
+  targetType: string;
+  expectedStatusCode: number;
+  expectedMimeType: string;
+  expectedSha256: string;
+  requiredSelectors: string[];
+  forbiddenTags: string[];
+  forbiddenAttrsPrefix: string[];
+}
+
+export interface SecurityScanCreateResponse {
+  success: boolean;
+  message: string;
+  batchId?: string | null;
+  targetProxyCount: number;
+  aliveCount: number;
+}
+
+export interface SecurityBehaviorStat {
+  behaviorClass: string;
+  riskLevel: RiskLevel;
+  count: number;
 }
 
 export interface SecurityFunnelOverviewStat {

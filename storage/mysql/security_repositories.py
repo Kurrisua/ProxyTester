@@ -137,16 +137,89 @@ class MySQLSecurityRepository(
 
     def finish_batch(self, batch_id: str, status: str, error_message: str | None = None) -> None:
         with self._lock:
+            batch_pk = self._resolve_batch_pk(batch_id)
             self.cursor.execute(
                 """
                 UPDATE security_scan_batches
                 SET status = %s,
                     finished_at = %s,
                     elapsed_seconds = TIMESTAMPDIFF(MICROSECOND, started_at, %s) / 1000000,
-                    error_message = %s
-                WHERE batch_id = %s
+                    error_message = %s,
+                    checked_proxy_count = (
+                        SELECT COUNT(DISTINCT CONCAT(proxy_ip, ':', proxy_port))
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND execution_status = 'completed'
+                    ),
+                    skipped_proxy_count = (
+                        SELECT COUNT(DISTINCT CONCAT(proxy_ip, ':', proxy_port))
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND execution_status = 'skipped'
+                    ),
+                    error_proxy_count = (
+                        SELECT COUNT(DISTINCT CONCAT(proxy_ip, ':', proxy_port))
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND execution_status IN ('error', 'timeout')
+                    ),
+                    normal_proxy_count = (
+                        SELECT COUNT(DISTINCT CONCAT(proxy_ip, ':', proxy_port))
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND outcome = 'normal'
+                    ),
+                    suspicious_proxy_count = (
+                        SELECT COUNT(DISTINCT CONCAT(proxy_ip, ':', proxy_port))
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND risk_level = 'medium'
+                    ),
+                    malicious_proxy_count = (
+                        SELECT COUNT(DISTINCT CONCAT(proxy_ip, ':', proxy_port))
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND risk_level IN ('high', 'critical')
+                    ),
+                    anomaly_event_count = (
+                        SELECT COUNT(*)
+                        FROM security_behavior_events
+                        WHERE batch_id = %s
+                    ),
+                    light_scan_count = (
+                        SELECT COUNT(*)
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND scan_depth = 'light'
+                    ),
+                    standard_scan_count = (
+                        SELECT COUNT(*)
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND scan_depth = 'standard'
+                    ),
+                    deep_scan_count = (
+                        SELECT COUNT(*)
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND scan_depth = 'deep'
+                    ),
+                    browser_scan_count = (
+                        SELECT COUNT(*)
+                        FROM security_scan_records
+                        WHERE batch_id = %s AND scan_depth = 'browser'
+                    )
+                WHERE id = %s
                 """,
-                (status, datetime.now(), datetime.now(), error_message, batch_id),
+                (
+                    status,
+                    datetime.now(),
+                    datetime.now(),
+                    error_message,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                    batch_pk,
+                ),
             )
             self.conn.commit()
 

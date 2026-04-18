@@ -1,36 +1,34 @@
 # ProxyTester 使用说明
 
-ProxyTester 是一个代理采集、检测、评分、入库、查询和可视化平台。当前项目已经从单纯的“代理可用性检测工具”升级为“代理安全研究平台”的基础版本：系统不仅判断代理是否可用，还会记录检测批次、逐阶段检测记录、安全事件、证据、资源观测、证书观测和地理聚合结果，帮助把代理从“可用/不可用”的资源对象升级为“正常/可疑/恶意”的行为研究对象。
+ProxyTester 是一个代理采集、检测、评分、入库、查询和可视化平台。当前版本已经从单纯的“代理可用性检测工具”升级为代理安全研究平台的基础版：系统不仅判断代理是否可用，还会记录检测批次、漏斗阶段记录、安全事件、证据、资源观测、证书观测、蜜罐访问摘要和地理聚合结果，帮助把代理从“可用/不可用”的资源对象升级为“正常/可疑/恶意”的行为研究对象。
 
-本文档重点说明怎么安装、配置、运行、验证和排错。
+本文重点说明如何安装、配置、初始化数据库、运行后端、运行前端、触发检测和排错。
 
 ---
 
 ## 1. 当前能力
 
-当前仓库包含以下能力：
+当前仓库包含：
 
-- 免费代理源采集与合并去重。
+- 免费代理源采集、合并和去重。
 - Deadpool 代理源刷新和本地文件源读取。
 - 基础连通性检测。
 - HTTP、HTTPS、SOCKS5 协议识别。
-- 匿名性、出口地理位置、业务可用性检测。
+- 匿名性、出口地理位置和业务可用性检测。
 - 基础评分和安全评分。
 - MySQL 持久化。
-- 检测批次、检测记录、安全行为事件、证据、资源和证书观测表。
-- Flask API 查询代理、统计、安全总览、批次、事件和国家/地区聚合。
-- 本地蜜罐页面和资源。
+- 检测批次、检测记录、安全行为事件、证据、资源观测、证书观测、蜜罐日志等安全研究表结构。
+- Flask API 查询代理、统计、安全总览、批次、事件、国家/地区聚合和蜜罐 manifest。
+- 本地蜜罐页面、资源、下载样本和表单提交入口。
 - React + Vite + TypeScript + Tailwind 前端。
-- 前端页面：安全总览、代理列表、代理详情、检测批次、安全事件、世界地图。
+- 前端页面：安全总览、代理列表、代理详情、检测批次、安全事件、事件详情、蜜罐目标、世界地图。
 - Python 单元测试和前端 TypeScript 检查。
 
-当前仍然是安全研究平台的基础版，不是完整的浏览器沙箱或企业级威胁情报系统。高成本检测、复杂多轮浏览器模拟、深度 MITM 研究和更精细的地图交互仍可继续扩展。
+当前仍然是安全研究平台的基础版，不是完整浏览器沙箱或企业级威胁情报系统。高成本浏览器模拟、更复杂的多轮攻击诱导和更细粒度地图交互仍可继续增强。
 
 ---
 
 ## 2. 目录结构
-
-常用目录如下：
 
 ```text
 ProxyTester/
@@ -46,7 +44,7 @@ ProxyTester/
   migrations/                    MySQL schema migration SQL
   scheduler/                     检测 pipeline
   scoring/                       基础评分和安全评分
-  security/                      蜜罐、DOM、资源、MITM、流量等安全检测
+  security/                      蜜罐、DOM、资源、MITM、动态观测等安全检测
   services/                      工作流服务、查询服务、检测服务
   storage/mysql/                 MySQL 连接和 repository
   tests/                         Python 单元测试
@@ -58,13 +56,13 @@ ProxyTester/
 
 建议环境：
 
-- Windows 10/11 或兼容的 PowerShell 环境。
+- Windows 10/11 或兼容 PowerShell 环境。
 - Python 3.10+。
 - Node.js 18+。
 - npm 9+。
 - MySQL 8.0+。
 
-本项目当前默认数据库连接为：
+项目当前默认数据库连接为：
 
 ```text
 host: localhost
@@ -74,13 +72,21 @@ database: proxy_pool
 charset: utf8mb4
 ```
 
-这些默认值来自 `storage/mysql/connection.py`，可通过环境变量覆盖。
+默认值来自 `storage/mysql/connection.py`，可以通过环境变量覆盖：
+
+```powershell
+$env:PROXYTESTER_DB_HOST="localhost"
+$env:PROXYTESTER_DB_PORT="3307"
+$env:PROXYTESTER_DB_USER="root"
+$env:PROXYTESTER_DB_PASSWORD="你的密码"
+$env:PROXYTESTER_DB_NAME="proxy_pool"
+```
 
 ---
 
 ## 4. 快速启动
 
-下面以 PowerShell 为例。
+下面命令均以 PowerShell 为例。
 
 ### 4.1 进入项目目录
 
@@ -93,31 +99,17 @@ cd C:\MyProjects\ProxyTester
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-```
-
-如果 PowerShell 禁止执行脚本，可以临时允许当前进程执行：
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
 ```
 
 ### 4.3 安装 Python 依赖
 
-项目当前没有统一的 `requirements.txt`，按当前代码使用情况至少需要：
+如果仓库内已有依赖文件，优先使用：
 
 ```powershell
-python -m pip install flask flask-cors pymysql requests "requests[socks]"
+python -m pip install -r requirements.txt
 ```
 
-说明：
-
-- `flask`：启动 API 服务。
-- `flask-cors`：允许前端跨域访问后端。
-- `pymysql`：连接 MySQL。
-- `requests`：执行 HTTP/HTTPS 检测。
-- `requests[socks]`：支持 SOCKS 代理检测。
+如果依赖已经安装在 `.venv` 中，可以直接进入下一步。
 
 ### 4.4 安装前端依赖
 
@@ -129,111 +121,59 @@ cd C:\MyProjects\ProxyTester
 
 ---
 
-## 5. 配置数据库
+## 5. 初始化数据库
 
-### 5.1 环境变量
+项目使用 MySQL，schema 由 `migrations/` 下 SQL 文件维护。不要再依赖业务代码隐式 `ALTER TABLE` 来补表结构。
 
-后端读取以下环境变量：
-
-```powershell
-$env:DB_HOST = "localhost"
-$env:DB_PORT = "3307"
-$env:DB_USER = "root"
-$env:DB_PASSWORD = "your_password"
-$env:DB_NAME = "proxy_pool"
-```
-
-如果你的 MySQL 没有密码，可以把 `DB_PASSWORD` 设为空字符串：
-
-```powershell
-$env:DB_PASSWORD = ""
-```
-
-### 5.2 创建数据库
-
-如果数据库还不存在，先创建：
-
-```powershell
-$env:MYSQL_PWD = "your_password"
-mysql -h localhost -P 3307 -u root -e "CREATE DATABASE IF NOT EXISTS proxy_pool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-Remove-Item Env:\MYSQL_PWD
-```
-
-如果 root 没有密码，可以省略 `MYSQL_PWD`：
-
-```powershell
-mysql -h localhost -P 3307 -u root -e "CREATE DATABASE IF NOT EXISTS proxy_pool CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-### 5.3 执行 migration
-
-数据库结构通过 `migrations/` 目录中的 SQL 文件管理。请按文件名顺序执行：
+建议按顺序执行：
 
 ```text
-migrations/
-  001_extend_proxies_security_fields.sql
-  002_create_security_scan_batches.sql
-  003_create_security_scan_records.sql
-  004_create_security_behavior_events.sql
-  005_create_security_evidence_files.sql
-  006_create_security_certificate_observations.sql
-  007_create_security_resource_observations.sql
-  008_create_proxy_sources.sql
-  009_create_proxy_check_records.sql
-  010_create_honeypot_targets.sql
-  011_create_honeypot_request_logs.sql
+migrations/001_extend_proxies_security_fields.sql
+migrations/002_create_security_scan_batches.sql
+migrations/003_create_security_scan_records.sql
+migrations/004_create_security_behavior_events.sql
+migrations/005_create_security_evidence_files.sql
+migrations/006_create_security_certificate_observations.sql
+migrations/007_create_security_resource_observations.sql
+migrations/008_create_proxy_sources.sql
+migrations/009_create_proxy_check_records.sql
+migrations/010_create_honeypot_targets.sql
+migrations/011_create_honeypot_request_logs.sql
 ```
 
-执行示例：
+如果是已有数据库，建议先备份：
 
 ```powershell
-cd C:\MyProjects\ProxyTester
-$env:MYSQL_PWD = "your_password"
-Get-ChildItem .\migrations\*.sql | Sort-Object Name | ForEach-Object {
-  Get-Content $_.FullName | mysql -h localhost -P 3307 -u root proxy_pool
-}
-Remove-Item Env:\MYSQL_PWD
+mysqldump -h localhost -P 3307 -u root -p proxy_pool > proxy_pool_backup.sql
 ```
 
-如果你的 MySQL root 没有密码：
+执行 migration 示例：
 
 ```powershell
-cd C:\MyProjects\ProxyTester
-Get-ChildItem .\migrations\*.sql | Sort-Object Name | ForEach-Object {
-  Get-Content $_.FullName | mysql -h localhost -P 3307 -u root proxy_pool
-}
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\001_extend_proxies_security_fields.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\002_create_security_scan_batches.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\003_create_security_scan_records.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\004_create_security_behavior_events.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\005_create_security_evidence_files.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\006_create_security_certificate_observations.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\007_create_security_resource_observations.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\008_create_proxy_sources.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\009_create_proxy_check_records.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\010_create_honeypot_targets.sql
+mysql -h localhost -P 3307 -u root -p proxy_pool < migrations\011_create_honeypot_request_logs.sql
 ```
 
-重要提醒：
+注意：
 
-- 如果已有历史数据，执行前建议先备份 `proxies` 表。
 - `proxies` 主表只保存最新汇总状态。
-- 完整检测过程保存在 scan batch、scan record、behavior event、evidence、certificate observation、resource observation 等明细表中。
-- 不要再依赖业务代码启动时隐式改表。
-
-### 5.4 备份 proxies 表
-
-已有数据时建议先做 SQL 备份：
-
-```powershell
-$env:MYSQL_PWD = "your_password"
-mysqldump -h localhost -P 3307 -u root proxy_pool proxies > backups\proxies_backup.sql
-Remove-Item Env:\MYSQL_PWD
-```
-
-也可以根据实际部署策略导出全库：
-
-```powershell
-$env:MYSQL_PWD = "your_password"
-mysqldump -h localhost -P 3307 -u root proxy_pool > backups\proxy_pool_backup.sql
-Remove-Item Env:\MYSQL_PWD
-```
+- 完整检测过程保存到批次表、记录表、事件表、证据表、证书观测表、资源观测表和蜜罐日志表。
+- 删除代理时不要轻易级联删除研究历史。
 
 ---
 
 ## 6. 启动后端 API
 
-后端入口是 `api.py`：
+在项目根目录运行：
 
 ```powershell
 cd C:\MyProjects\ProxyTester
@@ -241,65 +181,63 @@ cd C:\MyProjects\ProxyTester
 python api.py
 ```
 
-默认监听：
+默认 API 地址：
 
 ```text
 http://localhost:5000
 ```
 
-Flask 会注册三组路由：
-
-- 代理查询 API：`/api/...`
-- 安全研究 API：`/api/security/...`
-- 蜜罐资源：`/honeypot/...`
-
-### 6.1 检查 API 是否启动
-
-浏览器或 PowerShell 访问：
+常用健康检查：
 
 ```powershell
-Invoke-RestMethod http://localhost:5000/api/stats
+curl http://localhost:5000/api/stats
+curl http://localhost:5000/api/security/overview
+curl http://localhost:5000/api/security/geo
+curl http://localhost:5000/api/security/honeypot/manifest
 ```
 
-如果数据库尚未初始化或连接失败，先检查：
+蜜罐目标示例：
 
-- MySQL 服务是否启动。
-- `DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME` 是否正确。
-- `migrations/` 是否已经按顺序执行。
+```text
+http://localhost:5000/honeypot/static/basic
+http://localhost:5000/honeypot/static/complex
+http://localhost:5000/honeypot/assets/site.css
+http://localhost:5000/honeypot/assets/site.js
+http://localhost:5000/honeypot/assets/marker.svg
+http://localhost:5000/honeypot/download/sample.txt
+http://localhost:5000/honeypot/download/sample.zip
+```
 
 ---
 
 ## 7. 启动前端
 
-前端目录是 `daili/`：
+另开一个 PowerShell：
 
 ```powershell
 cd C:\MyProjects\ProxyTester\daili
 npm run dev
 ```
 
-默认访问：
+默认前端地址通常是：
 
 ```text
-http://localhost:3000
+http://localhost:5173
 ```
 
-当前前端 API client 直接访问：
+前端会请求：
 
 ```text
 http://localhost:5000/api
 ```
 
-因此本地使用时需要同时启动：
-
-1. Flask API：`python api.py`
-2. Vite 前端：`npm run dev`
+如果后端端口不同，请修改 `daili/src/api/client.ts` 中的 `API_BASE_URL`。
 
 ---
 
-## 8. 运行代理采集和检测流水线
+## 8. 运行检测
 
-命令行入口是 `main.py`：
+### 8.1 命令行完整检测
 
 ```powershell
 cd C:\MyProjects\ProxyTester
@@ -307,451 +245,142 @@ cd C:\MyProjects\ProxyTester
 python main.py
 ```
 
-完整流程会执行：
+该入口会执行代理采集、基础检测、安全检测、评分和入库。当前 pipeline 会生成安全检测批次，并为基础 checker 与安全 checker 记录阶段结果。失败、跳过、不适用和错误也会记录，不再只保存存活代理。
 
-1. 可选刷新 Deadpool 外部代理源。
-2. 读取多个代理源文件。
-3. 合并去重。
-4. 生成规范化代理数据。
-5. 执行基础检测。
-6. 执行安全检测插件。
-7. 计算基础评分和安全评分。
-8. 保存 `proxies` 最新汇总状态。
-9. 保存检测批次、检测记录、安全事件、证据和观测数据。
-
-### 8.1 常用参数
-
-跳过外部抓取，只检测本地已有数据：
+### 8.2 通过 API 刷新代理
 
 ```powershell
-python main.py --skip-crawl
+curl -X POST http://localhost:5000/api/refresh
 ```
 
-跳过 Deadpool 源：
+### 8.3 触发指定代理安全扫描
 
 ```powershell
-python main.py --skip-deadpool-sources
+curl -X POST http://localhost:5000/api/security/proxies/127.0.0.1:8080/scan `
+  -H "Content-Type: application/json" `
+  -d "{\"maxWorkers\":1}"
 ```
 
-不写入数据库，只做本地验证：
+### 8.4 批量触发安全扫描
 
 ```powershell
-python main.py --skip-db
-```
-
-限制并发，适合第一次小规模验证：
-
-```powershell
-python main.py --skip-crawl --max-workers 20
-```
-
-最小验证命令：
-
-```powershell
-python main.py --skip-crawl --skip-db --max-workers 20
+curl -X POST http://localhost:5000/api/security/scans `
+  -H "Content-Type: application/json" `
+  -d "{\"proxies\":[\"127.0.0.1:8080\",\"127.0.0.2:8080\"],\"maxWorkers\":4}"
 ```
 
 ---
 
-## 9. 启用蜜罐和安全检测
+## 9. 主要 API
 
-安全检测采用漏斗式逐层检测，不会默认对所有代理执行最重检测。当前安全插件会根据代理状态、协议能力和环境变量决定是否执行。
-
-### 9.1 本地蜜罐页面
-
-启动 `python api.py` 后，可访问：
+代理基础接口：
 
 ```text
-http://localhost:5000/honeypot/static/basic
-```
-
-蜜罐 manifest：
-
-```text
-http://localhost:5000/honeypot/manifest
-```
-
-蜜罐资源：
-
-```text
-http://localhost:5000/honeypot/assets/site.css
-http://localhost:5000/honeypot/assets/site.js
-http://localhost:5000/honeypot/assets/pixel.txt
-```
-
-### 9.2 开启 HTML/DOM 和资源完整性检测
-
-设置 `HONEYPOT_BASE_URL`：
-
-```powershell
-$env:HONEYPOT_BASE_URL = "http://127.0.0.1:5000/honeypot/static/basic"
-$env:HONEYPOT_TIMEOUT_SECONDS = "10"
-```
-
-然后运行检测：
-
-```powershell
-python main.py --skip-crawl --max-workers 20
-```
-
-如果没有设置 `HONEYPOT_BASE_URL`，相关检测会生成 `skipped` 或 `not_applicable` 语义，而不是把“未检测”当成安全。
-
-### 9.3 开启 HTTPS / SOCKS MITM 证书观测
-
-设置 HTTPS 目标：
-
-```powershell
-$env:MITM_TARGET_URL = "https://example.com/"
-$env:MITM_TIMEOUT_SECONDS = "10"
-```
-
-也可以使用：
-
-```powershell
-$env:HONEYPOT_HTTPS_URL = "https://example.com/"
-```
-
-注意：
-
-- 纯 HTTP 代理不应被解释为“MITM 正常”，应记录为 `not_applicable`。
-- 证书检测失败、网络失败、超时和证书异常会区分记录。
-- 高成本检测应优先用于高可用、可疑、高价值或抽样代理。
-
----
-
-## 10. 前端页面怎么用
-
-启动后端和前端后，打开：
-
-```text
-http://localhost:3000
-```
-
-主要页面：
-
-```text
-/overview              安全总览
-/proxies               代理列表
-/proxies/:ip/:port     代理详情
-/batches               检测批次
-/events                安全事件
-/map                   世界地图
-```
-
-### 10.1 安全总览
-
-安全总览用于查看整体风险态势：
-
-- 代理数量。
-- 活跃代理数量。
-- 未检测数量。
-- 正常、可疑、恶意或高风险代理分布。
-- 检测批次趋势。
-- 行为事件分布。
-
-### 10.2 代理列表
-
-代理列表用于筛选和查看代理最新状态。内部状态使用稳定英文枚举，前端负责展示中文。
-
-常见状态：
-
-```text
-alive   存活
-slow    较慢
-dead    失效
-```
-
-常见匿名级别：
-
-```text
-high_anonymous  高匿
-anonymous       匿名
-transparent     透明
-unknown         未知
-```
-
-### 10.3 代理详情
-
-代理详情页用于查看单个代理：
-
-- 基础状态。
-- 协议能力。
-- 响应时间。
-- 评分。
-- 安全风险。
-- 漏斗式检测路径。
-- 关联检测记录。
-- 关联安全事件。
-
-### 10.4 检测批次
-
-检测批次页用于查看每次 pipeline 运行：
-
-- 批次 ID。
-- 开始时间和结束时间。
-- 代理总量。
-- 完成、跳过、错误、超时数量。
-- 检测记录摘要。
-
-### 10.5 安全事件
-
-安全事件页用于查看异常行为：
-
-- 内容篡改。
-- 广告注入。
-- 脚本注入。
-- 跳转操纵。
-- 资源替换。
-- MITM 可疑。
-- 隐蔽恶意行为。
-- 非恶意但不稳定行为。
-
-### 10.6 世界地图
-
-世界地图页按国家/地区聚合代理安全态势。第一版聚合维度包括：
-
-- 代理总数。
-- 活跃数量。
-- 未检测数量。
-- 正常、可疑、恶意数量。
-- 平均响应时间。
-- 协议分布。
-- 最高风险等级。
-- 主要异常类型。
-
-点击国家/地区后，可进入筛选后的代理列表或事件列表。
-
----
-
-## 11. API 使用
-
-后端默认地址：
-
-```text
-http://localhost:5000
-```
-
-### 11.1 代理列表
-
-```http
-GET /api/proxies?page=1&limit=20
-```
-
-可选查询参数：
-
-```text
-country              国家/地区
-type                 协议类型
-status               alive | slow | dead
-min_business_score   最低业务评分
-sort                 response_time 等排序字段
-page                 页码
-limit                每页数量
-```
-
-PowerShell 示例：
-
-```powershell
-Invoke-RestMethod "http://localhost:5000/api/proxies?page=1&limit=20"
-```
-
-### 11.2 代理详情
-
-```http
-GET /api/proxies/<ip>:<port>
-```
-
-示例：
-
-```powershell
-Invoke-RestMethod "http://localhost:5000/api/proxies/1.2.3.4:8080"
-```
-
-### 11.3 删除代理
-
-```http
+GET    /api/proxies
+GET    /api/proxies/<ip>:<port>
 DELETE /api/proxies/<ip>:<port>
+GET    /api/stats
+GET    /api/filters
+POST   /api/refresh
 ```
 
-示例：
-
-```powershell
-Invoke-RestMethod -Method Delete "http://localhost:5000/api/proxies/1.2.3.4:8080"
-```
-
-### 11.4 统计信息
-
-```http
-GET /api/stats
-```
-
-示例：
-
-```powershell
-Invoke-RestMethod "http://localhost:5000/api/stats"
-```
-
-### 11.5 筛选项
-
-```http
-GET /api/filters
-```
-
-### 11.6 高质量代理
-
-```http
-GET /api/proxies/high-quality?min_score=2&limit=10
-```
-
-### 11.7 触发刷新
-
-```http
-POST /api/refresh
-```
-
-请求体示例：
-
-```json
-{
-  "refreshCrawler": true,
-  "includeDeadpoolSources": true,
-  "maxWorkers": 150,
-  "saveToDb": true
-}
-```
-
-PowerShell 示例：
-
-```powershell
-$body = @{
-  refreshCrawler = $true
-  includeDeadpoolSources = $true
-  maxWorkers = 50
-  saveToDb = $true
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post `
-  -Uri "http://localhost:5000/api/refresh" `
-  -ContentType "application/json" `
-  -Body $body
-```
-
-### 11.8 安全总览
-
-```http
-GET /api/security/overview
-```
-
-### 11.9 检测批次
-
-```http
-GET /api/security/batches?page=1&limit=20
-GET /api/security/scans?page=1&limit=20
-```
-
-两者当前都返回批次列表。
-
-### 11.10 批次详情
-
-```http
-GET /api/security/batches/<batch_id>?recordLimit=100
-GET /api/security/scans/<batch_id>?recordLimit=100
-```
-
-### 11.11 安全事件
-
-```http
-GET /api/security/events?page=1&limit=20
-```
-
-可选查询参数：
+安全平台接口：
 
 ```text
-eventType    行为事件类型
-riskLevel    unknown | low | medium | high | critical
-country      国家/地区
+GET  /api/security/overview
+GET  /api/security/proxies
+GET  /api/security/proxies/<ip>:<port>
+GET  /api/security/proxies/<ip>:<port>/history
+GET  /api/security/proxies/<ip>:<port>/events
+POST /api/security/proxies/<ip>:<port>/scan
+
+GET  /api/security/batches
+GET  /api/security/batches/<batch_id>
+POST /api/security/batches
+
+GET  /api/security/events
+GET  /api/security/events/<event_id>
+
+GET  /api/security/geo
+GET  /api/security/geo/<country>
+
+GET  /api/security/stats/behavior
+GET  /api/security/stats/risk-trend
+GET  /api/security/analytics/trend
+GET  /api/security/analytics/event-types
+GET  /api/security/analytics/risk-distribution
+
+GET  /api/security/honeypot/manifest
 ```
 
-### 11.12 国家/地区聚合
+常用筛选参数：
 
-```http
-GET /api/security/geo
+```text
+/api/proxies?country=China&type=HTTP&status=alive&page=1&limit=20
+/api/proxies?securityRisk=high&behaviorClass=script_injection
+/api/security/events?riskLevel=high&eventType=script_injection
+/api/security/geo/CN
+```
+
+内部状态统一使用英文枚举，前端负责中文展示。例如：
+
+```text
+alive / slow / dead
+unknown / low / medium / high / critical
+planned / running / completed / skipped / error / timeout
+normal / anomalous / not_applicable / skipped / error / timeout
 ```
 
 ---
 
-## 12. 稳定状态枚举
+## 10. 前端页面
 
-项目内部状态使用英文枚举，前端负责中文展示。
-
-### 12.1 Applicability
+启动前端后可访问：
 
 ```text
-applicable
-not_applicable
-unknown
+/overview       安全总览，包含风险分布、趋势、漏斗、事件和国家排行
+/proxies        代理资产列表
+/proxies/:ip/:port
+                代理详情、漏斗路径、安全事件、资源观测、证书观测、检测记录
+/batches        检测批次和批次详情
+/events         安全事件列表
+/events/:id     安全事件详情和证据文件
+/honeypot       蜜罐目标与基准资源
+/map            国家级世界地图，支持 hover 摘要、点击详情和跳转列表
 ```
 
-### 12.2 ExecutionStatus
+---
+
+## 11. 安全检测语义
+
+检测采用漏斗式逐层推进：
 
 ```text
-planned
-running
-completed
-skipped
-error
-timeout
+基础连通性
+  -> 协议识别
+  -> 轻量蜜罐检测
+  -> 内容 hash 对比
+  -> DOM / HTML 风险规则
+  -> 资源完整性检测
+  -> HTTPS / SOCKS MITM
+  -> 多轮条件触发检测
+  -> 无头浏览器深度检测
+  -> 行为分类与安全评分
 ```
 
-### 12.3 ScanOutcome
+关键规则：
 
-```text
-normal
-anomalous
-not_applicable
-skipped
-error
-timeout
-```
-
-### 12.4 RiskLevel
-
-```text
-unknown
-low
-medium
-high
-critical
-```
-
-### 12.5 BehaviorClass
-
-```text
-normal
-content_tampering
-ad_injection
-script_injection
-redirect_manipulation
-resource_replacement
-mitm_suspected
-stealthy_malicious
-unstable_but_non_malicious
-```
-
-关键语义：
-
-- `normal` 表示已执行且没有发现异常。
-- `not_applicable` 表示检测条件不适用，例如 HTTP 代理不适合被标记为 MITM 正常。
-- `skipped` 表示本轮有意跳过，例如未配置目标 URL 或漏斗前置条件不满足。
-- `error` 表示执行失败。
-- `timeout` 表示明确超时。
+- 纯 HTTP 代理不会被标记为“MITM 正常”，而是记录为 `not_applicable` 或 `skipped`。
+- 资源请求失败不会直接判定为资源替换。
+- 网络失败、超时、内容异常、证书异常会尽量区分。
+- 高成本检测只应对高可用、可疑、高价值或抽样代理执行。
 - 未检测永远不能被当成安全。
 
 ---
 
-## 13. 测试和构建
+## 12. 测试和构建
 
-### 13.1 后端单元测试
+后端单元测试：
 
 ```powershell
 cd C:\MyProjects\ProxyTester
@@ -759,287 +388,85 @@ cd C:\MyProjects\ProxyTester
 python -m unittest discover -s tests
 ```
 
-### 13.2 前端类型检查
+前端类型检查：
 
 ```powershell
 cd C:\MyProjects\ProxyTester\daili
 npm run lint
 ```
 
-当前 `lint` 实际执行的是：
-
-```text
-tsc --noEmit
-```
-
-### 13.3 前端生产构建
+前端生产构建：
 
 ```powershell
 cd C:\MyProjects\ProxyTester\daili
 npm run build
 ```
 
-构建产物会输出到 Vite 默认目录：
+---
 
-```text
-daili/dist/
-```
+## 13. 常见问题
 
-### 13.4 前端本地预览
+### 13.1 `pymysql.err.InterfaceError: (0, '')`
+
+常见原因是数据库连接断开、MySQL 未启动、连接配置错误，或多个并发线程共享同一个未加保护的连接/游标。当前安全 repository 已加入锁来避免同一连接被多个 worker 同时操作，但仍建议：
+
+- 确认 MySQL 正在运行。
+- 确认端口、用户名、密码和数据库名正确。
+- 确认 migrations 已执行。
+- 降低检测并发，例如 API 里设置 `maxWorkers: 1` 或较小值。
+
+### 13.2 前端没有数据
+
+先确认后端可访问：
 
 ```powershell
-cd C:\MyProjects\ProxyTester\daili
-npm run preview
+curl http://localhost:5000/api/stats
+curl http://localhost:5000/api/security/overview
+```
+
+再确认前端 API 地址 `daili/src/api/client.ts` 是否指向正确后端。
+
+### 13.3 安全总览报表为空
+
+可能原因：
+
+- 还没有执行安全检测。
+- migration 未执行，安全表不存在。
+- 数据库里只有基础代理数据，没有检测批次和安全记录。
+
+先运行：
+
+```powershell
+python main.py
+```
+
+或通过 API 触发某个代理的安全扫描。
+
+### 13.4 世界地图国家不高亮
+
+地图第一版使用国家级聚合，需要后端返回可识别的国家名称或国家代码。当前内置了常见国家/地区映射，未知国家会在表格和统计中保留，但不一定能映射到地图形状。
+
+### 13.5 中文乱码
+
+源码和数据库都应使用 UTF-8 / utf8mb4。建议：
+
+- 编辑器使用 UTF-8。
+- MySQL 数据库和连接使用 `utf8mb4`。
+- PowerShell 如显示乱码，可尝试：
+
+```powershell
+chcp 65001
 ```
 
 ---
 
-## 14. 常见使用场景
+## 14. 开发约束
+
+- 业务状态值使用稳定英文枚举。
+- 前端只负责把英文枚举映射为中文文案。
+- schema 变更先写 migration。
+- `proxies` 只保存最新汇总状态。
+- 完整检测过程保存到安全明细表。
+- 不要把未检测解释为安全。
+- 不要默认对所有代理执行最高成本检测。
 
-### 14.1 只想打开前端看已有数据库数据
-
-终端 1：
-
-```powershell
-cd C:\MyProjects\ProxyTester
-.\.venv\Scripts\Activate.ps1
-python api.py
-```
-
-终端 2：
-
-```powershell
-cd C:\MyProjects\ProxyTester\daili
-npm run dev
-```
-
-浏览器打开：
-
-```text
-http://localhost:3000
-```
-
-### 14.2 第一次小规模检测
-
-先启动 API，让本地蜜罐可访问：
-
-```powershell
-cd C:\MyProjects\ProxyTester
-.\.venv\Scripts\Activate.ps1
-python api.py
-```
-
-另开一个终端：
-
-```powershell
-cd C:\MyProjects\ProxyTester
-.\.venv\Scripts\Activate.ps1
-$env:HONEYPOT_BASE_URL = "http://127.0.0.1:5000/honeypot/static/basic"
-python main.py --skip-crawl --max-workers 20
-```
-
-### 14.3 只验证代码不写数据库
-
-```powershell
-python main.py --skip-crawl --skip-db --max-workers 20
-```
-
-### 14.4 触发一次完整刷新
-
-```powershell
-python main.py --max-workers 150
-```
-
-这会尝试刷新外部源、合并数据、检测并写入数据库。
-
-### 14.5 通过 API 刷新
-
-```powershell
-$body = @{
-  refreshCrawler = $true
-  includeDeadpoolSources = $true
-  maxWorkers = 50
-  saveToDb = $true
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Post `
-  -Uri "http://localhost:5000/api/refresh" `
-  -ContentType "application/json" `
-  -Body $body
-```
-
----
-
-## 15. 排错
-
-### 15.1 前端页面没有数据
-
-检查顺序：
-
-1. `python api.py` 是否正在运行。
-2. 浏览器能否访问 `http://localhost:5000/api/stats`。
-3. MySQL 是否启动。
-4. 数据库是否执行过 migration。
-5. `proxies` 表里是否已有数据。
-6. 浏览器开发者工具里是否有跨域或网络错误。
-
-### 15.2 API 连接数据库失败
-
-检查：
-
-```powershell
-$env:DB_HOST
-$env:DB_PORT
-$env:DB_USER
-$env:DB_PASSWORD
-$env:DB_NAME
-```
-
-也可以直接测试 MySQL：
-
-```powershell
-mysql -h localhost -P 3307 -u root -p proxy_pool
-```
-
-### 15.3 SOCKS5 检测报错
-
-确认安装了 SOCKS 支持：
-
-```powershell
-python -m pip install "requests[socks]"
-```
-
-### 15.4 安全检测一直 skipped
-
-常见原因：
-
-- 没有设置 `HONEYPOT_BASE_URL`。
-- 没有设置 `MITM_TARGET_URL` 或 `HONEYPOT_HTTPS_URL`。
-- 代理不支持相关协议。
-- 漏斗前置条件不满足，例如基础连通性失败。
-
-检查环境变量：
-
-```powershell
-$env:HONEYPOT_BASE_URL
-$env:MITM_TARGET_URL
-$env:HONEYPOT_HTTPS_URL
-```
-
-### 15.5 Deadpool 刷新很慢
-
-外部代理源质量和响应速度波动较大。可以先跳过抓取：
-
-```powershell
-python main.py --skip-crawl
-```
-
-也可以降低并发做排查：
-
-```powershell
-python main.py --skip-crawl --max-workers 20
-```
-
-### 15.6 端口被占用
-
-Flask 默认使用 5000，Vite 默认使用 3000。
-
-检查端口占用：
-
-```powershell
-netstat -ano | findstr :5000
-netstat -ano | findstr :3000
-```
-
----
-
-## 16. 开发扩展
-
-### 16.1 新增基础 checker
-
-建议步骤：
-
-1. 在 `checkers/` 下选择合适子目录新增 checker。
-2. 返回稳定的 `CheckResult`。
-3. 明确 `applicability`、`execution_status`、`outcome`、`skip_reason` 和 `funnel_stage`。
-4. 在 `checkers/registry.py` 注册。
-5. 为 checker 增加最小测试。
-
-### 16.2 新增安全 checker
-
-建议步骤：
-
-1. 在 `security/plugins/` 下新增插件。
-2. 遵守漏斗式检测原则，不要默认执行高成本检测。
-3. 不适用时返回 `not_applicable`。
-4. 条件不足时返回 `skipped`。
-5. 超时、网络错误、内容异常、证书异常要分开表达。
-6. 在 `security/registry.py` 注册。
-7. 如果会生成行为事件，使用稳定 `BehaviorClass`。
-
-### 16.3 新增 repository
-
-当前 MySQL repository 位于：
-
-```text
-storage/mysql/
-```
-
-如需支持其他数据库，应保持服务层契约不变，新增 repository 实现，而不是把 SQL 写入 pipeline。
-
-### 16.4 新增前端页面
-
-前端结构位于：
-
-```text
-daili/src/
-  app/
-  api/
-  components/
-  features/
-  lib/
-  types/
-```
-
-建议：
-
-1. API 调用放入 `api/`。
-2. 类型放入 `types/`。
-3. 页面和业务组件放入 `features/`。
-4. 枚举中文展示放入 label map，不要把中文状态传回后端。
-5. `App.tsx` 只保留应用组合入口。
-
----
-
-## 17. 当前限制
-
-- 迁移文件已经完整提供，但当前没有独立 migration runner，需要手动按顺序执行 SQL。
-- 前端 API base URL 当前固定为 `http://localhost:5000/api`。
-- 高成本检测应谨慎启用，避免对所有代理无差别执行。
-- 代理源质量受外部公开源波动影响，检测结果数量会随时间变化。
-- 世界地图第一版以国家/地区聚合为主，不做城市级定位。
-- 未配置蜜罐或 HTTPS 目标时，相关安全检测会跳过，这是正确语义，不代表代理安全。
-
----
-
-## 18. 推荐日常工作流
-
-开发和验证时建议按这个顺序：
-
-1. 启动 MySQL。
-2. 设置 `DB_*` 环境变量。
-3. 确认 migration 已执行。
-4. 启动 Flask API：`python api.py`。
-5. 设置 `HONEYPOT_BASE_URL`。
-6. 小规模运行：`python main.py --skip-crawl --max-workers 20`。
-7. 启动前端：`npm run dev`。
-8. 查看 `/overview`、`/proxies`、`/batches`、`/events`、`/map`。
-9. 运行后端测试：`python -m unittest discover -s tests`。
-10. 运行前端检查：`npm run lint`。
-11. 需要生产构建时运行：`npm run build`。
-
----
-
-## 19. 一句话定位
-
-ProxyTester 的下一阶段目标，是把代理从“可用/不可用”的资源对象，升级为“正常/可疑/恶意”的行为研究对象。

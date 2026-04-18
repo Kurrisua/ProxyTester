@@ -20,6 +20,7 @@ class CheckPipeline:
         self.scan_repository = scan_repository
         self.max_workers = max_workers
         self.logger = logging.getLogger(__name__)
+        self.last_batch_id: str | None = None
 
     def run_for_proxy(self, proxy, batch_id: str | None = None, runtime: dict | None = None):
         context = CheckContext(proxy=proxy)
@@ -85,6 +86,7 @@ class CheckPipeline:
         contexts = []
         total = len(proxies)
         batch_id = str(uuid4())
+        self.last_batch_id = batch_id
         if self.scan_repository:
             self.scan_repository.create_batch(SecurityScanBatch(batch_id=batch_id, target_proxy_count=total))
 

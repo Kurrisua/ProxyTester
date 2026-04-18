@@ -384,6 +384,209 @@ class MySQLSecurityQueryRepository:
             for row in rows
         ]
 
+    def get_geo_region_detail(self, country: str) -> dict:
+        summaries = self.get_geo_summary()
+        summary = next((item for item in summaries if item["countryName"] == country or item["countryCode"] == country), None)
+        country_name = summary["countryName"] if summary else country
+        if country_name == "Unknown":
+            country_condition = "country IS NULL OR country = ''"
+            params: tuple = ()
+        else:
+            country_condition = "country = %s"
+            params = (country_name,)
+
+        self.cursor.execute(
+            f"""
+            SELECT ip, port, proxy_type, is_alive, response_time, security_risk,
+                   behavior_class, risk_tags, last_security_check_time
+            FROM proxies
+            WHERE {country_condition}
+            ORDER BY
+                CASE COALESCE(security_risk, 'unknown')
+                    WHEN 'critical' THEN 5
+                    WHEN 'high' THEN 4
+                    WHEN 'medium' THEN 3
+                    WHEN 'low' THEN 2
+                    ELSE 1
+                END DESC,
+                last_security_check_time DESC
+            LIMIT 20
+            """,
+            params,
+        )
+        proxies = [
+            {
+                "proxy": f"{row['ip']}:{row['port']}",
+                "ip": row["ip"],
+                "port": row["port"],
+                "proxyType": row["proxy_type"],
+                "isAlive": bool(row["is_alive"]),
+                "responseTime": row["response_time"],
+                "securityRisk": row["security_risk"],
+                "behaviorClass": row["behavior_class"],
+                "riskTags": self._parse_json(row.get("risk_tags"), []),
+                "lastSecurityCheckTime": self._dt(row.get("last_security_check_time")),
+            }
+            for row in self.cursor.fetchall()
+        ]
+
+        events, _ = self.list_events(page=1, limit=20, filters={"country": country_name})
+        return {"summary": summary or {"countryCode": "UNKNOWN", "countryName": country_name}, "topProxies": proxies, "recentEvents": events}
+
+    def get_proxy_security_history(self, ip: str, port: int, limit: int = 80) -> list[dict]:
+        self.cursor.execute(
+            """
+            SELECT id, proxy_ip, proxy_port, round_index, funnel_stage, stage,
+                   checker_name, scan_depth, applicability, execution_status,
+                   outcome, skip_reason, precondition_summary, elapsed_ms,
+                   is_anomalous, risk_level, risk_tags, error_message, created_at
+            FROM security_scan_records
+            WHERE proxy_ip = %s AND proxy_port = %s
+            ORDER BY created_at DESC, id DESC
+            LIMIT %s
+            """,
+            (ip, port, limit),
+        )
+        return [self._record_row_to_dict(row) for row in self.cursor.fetchall()]
+
+    def get_proxy_security_events(self, ip: str, port: int, page: int = 1, limit: int = 20) -> tuple[list[dict], int]:
+        self.cursor.execute("SELECT id FROM proxies WHERE ip = %s AND port = %s", (ip, port))
+        proxy = self.cursor.fetchone()
+        proxy_id = proxy["id"] if proxy else None
+        where = "(r.proxy_ip = %s AND r.proxy_port = %s) OR (%s IS NOT NULL AND e.proxy_id = %s)"
+        params = [ip, port, proxy_id, proxy_id]
+        self.cursor.execute(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM security_behavior_events e
+            LEFT JOIN security_scan_records r ON e.record_id = r.id
+            WHERE {where}
+            """,
+            params,
+        )
+        total = self.cursor.fetchone()["total"]
+        offset = (page - 1) * limit
+        self.cursor.execute(
+            f"""
+            SELECT e.id, e.record_id, e.batch_id, e.proxy_id, e.event_type,
+                   e.behavior_class, e.risk_level, e.confidence, e.target_url,
+                   e.target_type, e.selector, e.affected_resource_url,
+                   e.external_domain, e.evidence, e.summary, e.created_at
+            FROM security_behavior_events e
+            LEFT JOIN security_scan_records r ON e.record_id = r.id
+            WHERE {where}
+            ORDER BY e.created_at DESC, e.id DESC
+            LIMIT %s OFFSET %s
+            """,
+            [*params, limit, offset],
+        )
+        return [self._event_row_to_dict(row) for row in self.cursor.fetchall()], total
+
+    def get_event_detail(self, event_id: int) -> dict | None:
+        self.cursor.execute(
+            """
+            SELECT e.id, e.record_id, e.batch_id, e.proxy_id, e.event_type,
+                   e.behavior_class, e.risk_level, e.confidence, e.target_url,
+                   e.target_type, e.selector, e.affected_resource_url,
+                   e.external_domain, e.evidence, e.summary, e.created_at,
+                   p.ip, p.port, p.country, p.proxy_type,
+                   r.stage, r.checker_name, r.funnel_stage, r.outcome,
+                   r.execution_status, r.risk_tags
+            FROM security_behavior_events e
+            LEFT JOIN proxies p ON e.proxy_id = p.id
+            LEFT JOIN security_scan_records r ON e.record_id = r.id
+            WHERE e.id = %s
+            """,
+            (event_id,),
+        )
+        row = self.cursor.fetchone()
+        if not row:
+            return None
+        event = self._event_row_to_dict(row)
+        self.cursor.execute(
+            """
+            SELECT id, record_id, event_id, proxy_id, evidence_type, storage_path,
+                   sha256, size_bytes, mime_type, summary, created_at
+            FROM security_evidence_files
+            WHERE event_id = %s OR record_id = %s
+            ORDER BY created_at DESC, id DESC
+            LIMIT 40
+            """,
+            (event_id, row["record_id"]),
+        )
+        evidence_files = [
+            {
+                "id": item["id"],
+                "recordId": item["record_id"],
+                "eventId": item["event_id"],
+                "proxyId": item["proxy_id"],
+                "evidenceType": item["evidence_type"],
+                "storagePath": item["storage_path"],
+                "sha256": item["sha256"],
+                "sizeBytes": item["size_bytes"],
+                "mimeType": item["mime_type"],
+                "summary": item["summary"],
+                "createdAt": self._dt(item["created_at"]),
+            }
+            for item in self.cursor.fetchall()
+        ]
+        return {
+            "event": event,
+            "proxy": {
+                "ip": row.get("ip"),
+                "port": row.get("port"),
+                "country": row.get("country"),
+                "proxyType": row.get("proxy_type"),
+            },
+            "record": {
+                "id": row.get("record_id"),
+                "stage": row.get("stage"),
+                "checkerName": row.get("checker_name"),
+                "funnelStage": row.get("funnel_stage"),
+                "outcome": row.get("outcome"),
+                "executionStatus": row.get("execution_status"),
+                "riskTags": self._parse_json(row.get("risk_tags"), []),
+            },
+            "evidenceFiles": evidence_files,
+        }
+
+    def get_behavior_stats(self) -> list[dict]:
+        self.cursor.execute(
+            """
+            SELECT COALESCE(behavior_class, 'normal') AS behavior_class,
+                   COALESCE(risk_level, 'unknown') AS risk_level,
+                   COUNT(*) AS count
+            FROM security_behavior_events
+            GROUP BY COALESCE(behavior_class, 'normal'), COALESCE(risk_level, 'unknown')
+            ORDER BY count DESC
+            """
+        )
+        return [{"behaviorClass": row["behavior_class"], "riskLevel": row["risk_level"], "count": row["count"]} for row in self.cursor.fetchall()]
+
+    def get_risk_trend(self, days: int = 14) -> list[dict]:
+        return self._get_risk_trend(days=days)
+
+    def get_event_type_distribution(self) -> list[dict]:
+        self.cursor.execute(
+            """
+            SELECT event_type, risk_level, COUNT(*) AS count
+            FROM security_behavior_events
+            GROUP BY event_type, risk_level
+            ORDER BY count DESC
+            """
+        )
+        return [{"eventType": row["event_type"], "riskLevel": row["risk_level"], "count": row["count"]} for row in self.cursor.fetchall()]
+
+    def get_risk_distribution(self) -> dict:
+        self.cursor.execute(
+            """
+            SELECT COALESCE(security_risk, 'unknown') AS risk_level, COUNT(*) AS count
+            FROM proxies
+            GROUP BY COALESCE(security_risk, 'unknown')
+            """
+        )
+        return {row["risk_level"]: row["count"] for row in self.cursor.fetchall()}
+
     def _protocol_distribution_for_country(self, country: str) -> dict:
         if country == "Unknown":
             self.cursor.execute("SELECT proxy_type, COUNT(*) AS count FROM proxies WHERE country IS NULL OR country = '' GROUP BY proxy_type")

@@ -50,14 +50,7 @@ export function SecurityBatchesPage() {
   }, [selectedBatchId]);
 
   const stageSteps = useMemo(
-    () =>
-      detail?.stageStats.map((item) => ({
-        stage: item.stage,
-        funnelStage: item.funnelStage,
-        executionStatus: item.executionStatus,
-        outcome: item.outcome,
-        count: item.count,
-      })) ?? [],
+    () => detail?.stageStats.map((item) => ({ stage: item.stage, funnelStage: item.funnelStage, executionStatus: item.executionStatus, outcome: item.outcome, count: item.count })) ?? [],
     [detail],
   );
 
@@ -72,11 +65,7 @@ export function SecurityBatchesPage() {
             <h2 className="text-lg font-bold">检测批次</h2>
             <p className="text-sm text-zinc-500">批次记录用于追踪每轮漏斗式检测的执行语义。</p>
           </div>
-          <button
-            type="button"
-            onClick={loadBatches}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50"
-          >
+          <button type="button" onClick={loadBatches} className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
             <RefreshCw className="h-4 w-4" />
             刷新
           </button>
@@ -93,9 +82,7 @@ export function SecurityBatchesPage() {
                 type="button"
                 key={batch.batchId}
                 onClick={() => setSelectedBatchId(batch.batchId)}
-                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                  selectedBatchId === batch.batchId ? 'border-emerald-300 bg-emerald-50' : 'border-zinc-200 bg-white hover:bg-zinc-50'
-                }`}
+                className={`w-full rounded-lg border p-3 text-left transition-colors ${selectedBatchId === batch.batchId ? 'border-emerald-300 bg-emerald-50' : 'border-zinc-200 bg-white hover:bg-zinc-50'}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="truncate font-mono text-xs text-zinc-600">{batch.batchId}</span>
@@ -105,9 +92,7 @@ export function SecurityBatchesPage() {
                   <Badge>{batch.status}</Badge>
                   <Badge tone="neutral">{batch.maxScanDepth ?? 'basic'}</Badge>
                 </div>
-                <div className="mt-2 text-xs text-zinc-500">
-                  目标 {batch.targetProxyCount}，已检 {batch.checkedProxyCount}，异常 {batch.anomalyEventCount}
-                </div>
+                <div className="mt-2 text-xs text-zinc-500">目标 {batch.targetProxyCount}，已检 {batch.checkedProxyCount}，异常 {batch.anomalyEventCount}</div>
               </button>
             ))}
           </div>
@@ -115,9 +100,7 @@ export function SecurityBatchesPage() {
       </section>
 
       <section className="space-y-4">
-        {detailLoading ? (
-          <LoadingState label="正在加载批次详情" />
-        ) : detail ? (
+        {detailLoading ? <LoadingState label="正在加载批次详情" /> : detail ? (
           <>
             <div className="rounded-lg border border-zinc-200 bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -141,24 +124,11 @@ export function SecurityBatchesPage() {
             </div>
 
             <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-              <div className="border-b border-zinc-200 p-4">
-                <h3 className="text-base font-bold">最近检测记录</h3>
-              </div>
-              {detail.records.length === 0 ? (
-                <div className="p-6 text-sm text-zinc-500">暂无检测记录。</div>
-              ) : (
+              <div className="border-b border-zinc-200 p-4"><h3 className="text-base font-bold">最近检测记录</h3></div>
+              {detail.records.length === 0 ? <div className="p-6 text-sm text-zinc-500">暂无检测记录。</div> : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-left text-sm">
-                    <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
-                      <tr>
-                        <th className="px-4 py-3">代理</th>
-                        <th className="px-4 py-3">阶段</th>
-                        <th className="px-4 py-3">状态</th>
-                        <th className="px-4 py-3">结果</th>
-                        <th className="px-4 py-3">风险</th>
-                        <th className="px-4 py-3">原因</th>
-                      </tr>
-                    </thead>
+                    <thead className="bg-zinc-50 text-xs uppercase text-zinc-500"><tr><th className="px-4 py-3">代理</th><th className="px-4 py-3">阶段</th><th className="px-4 py-3">状态</th><th className="px-4 py-3">结果</th><th className="px-4 py-3">风险</th><th className="px-4 py-3">原因</th></tr></thead>
                     <tbody className="divide-y divide-zinc-100">
                       {detail.records.map((record) => (
                         <tr key={record.id}>
@@ -176,19 +146,12 @@ export function SecurityBatchesPage() {
               )}
             </div>
           </>
-        ) : (
-          <div className="rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-500">请选择一个检测批次。</div>
-        )}
+        ) : <div className="rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-500">请选择一个检测批次。</div>}
       </section>
     </div>
   );
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-      <div className="text-xs text-zinc-500">{label}</div>
-      <div className="mt-1 text-2xl font-bold">{value}</div>
-    </div>
-  );
+  return <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-2xl font-bold">{value}</div></div>;
 }

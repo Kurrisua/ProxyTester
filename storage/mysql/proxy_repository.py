@@ -145,6 +145,15 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
         if filters.get("min_business_score") is not None:
             conditions.append("business_score >= %s")
             params.append(filters["min_business_score"])
+        if filters.get("security_risk"):
+            conditions.append("security_risk = %s")
+            params.append(filters["security_risk"])
+        if filters.get("behavior_class"):
+            conditions.append("behavior_class = %s")
+            params.append(filters["behavior_class"])
+        if filters.get("risk_tag"):
+            conditions.append("JSON_CONTAINS(COALESCE(risk_tags, JSON_ARRAY()), JSON_QUOTE(%s))")
+            params.append(filters["risk_tag"])
 
         sql = "SELECT * FROM proxies"
         if conditions:

@@ -17,6 +17,9 @@ def get_proxies():
             "proxy_type": request.args.get("type"),
             "status": request.args.get("status"),
             "min_business_score": request.args.get("min_business_score", type=int),
+            "security_risk": request.args.get("securityRisk") or request.args.get("security_risk"),
+            "behavior_class": request.args.get("behaviorClass") or request.args.get("behavior_class"),
+            "risk_tag": request.args.get("riskTag") or request.args.get("risk_tag"),
         }
         page = request.args.get("page", default=1, type=int)
         limit = request.args.get("limit", default=10, type=int)

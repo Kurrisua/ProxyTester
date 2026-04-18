@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Activity, Database, LayoutDashboard, ListChecks, Map, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Activity, Database, LayoutDashboard, ListChecks, Map, RadioTower, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: '/proxies', label: '代理资产', icon: Database },
   { to: '/batches', label: '检测批次', icon: ListChecks },
   { to: '/events', label: '安全事件', icon: ShieldAlert },
+  { to: '/honeypot', label: '蜜罐目标', icon: RadioTower },
   { to: '/map', label: '全球地图', icon: Map },
 ];
 
@@ -50,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-lg font-semibold tracking-tight">代理安全研究工作台</h1>
-              <p className="text-sm text-slate-500">统一查看代理资产、检测批次、安全事件与全球分布特征。</p>
+              <p className="text-sm text-slate-500">统一查看代理资产、检测批次、安全事件、蜜罐基准与全球分布特征。</p>
             </div>
             <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600">
               <Activity className="h-4 w-4 text-blue-600" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Filter, RefreshCw } from 'lucide-react';
 import { getSecurityEvents } from '../../../api/security';
 import { Badge } from '../../../components/ui/Badge';
@@ -58,43 +58,15 @@ export function SecurityEventsPage() {
             <p className="mt-1 text-sm text-zinc-500">异常行为、风险标签和证据摘要会在这里汇总，未检测状态不会被当成安全结论。</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="grid gap-1 text-sm">
-              <span className="text-xs text-zinc-500">事件类型</span>
-              <input
-                value={eventType}
-                onChange={(event) => setEventType(event.target.value)}
-                placeholder="script_injection"
-                className="h-10 rounded-lg border border-zinc-200 px-3 text-sm outline-none focus:border-emerald-400"
-              />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="text-xs text-zinc-500">国家/地区</span>
-              <input
-                value={country}
-                onChange={(event) => setCountry(event.target.value)}
-                placeholder="Unknown"
-                className="h-10 rounded-lg border border-zinc-200 px-3 text-sm outline-none focus:border-emerald-400"
-              />
-            </label>
+            <TextFilter label="事件类型" value={eventType} onChange={setEventType} placeholder="script_injection" />
+            <TextFilter label="国家/地区" value={country} onChange={setCountry} placeholder="Unknown" />
             <label className="grid gap-1 text-sm">
               <span className="text-xs text-zinc-500">风险等级</span>
-              <select
-                value={riskLevel}
-                onChange={(event) => setRiskLevel(event.target.value as RiskLevel | '')}
-                className="h-10 rounded-lg border border-zinc-200 px-3 text-sm outline-none focus:border-emerald-400"
-              >
-                {riskOptions.map((risk) => (
-                  <option key={risk || 'all'} value={risk}>
-                    {risk ? RISK_LEVEL_LABELS[risk] : '全部'}
-                  </option>
-                ))}
+              <select value={riskLevel} onChange={(event) => setRiskLevel(event.target.value as RiskLevel | '')} className="h-10 rounded-lg border border-zinc-200 px-3 text-sm outline-none focus:border-emerald-400">
+                {riskOptions.map((risk) => <option key={risk || 'all'} value={risk}>{risk ? RISK_LEVEL_LABELS[risk] : '全部'}</option>)}
               </select>
             </label>
-            <button
-              type="button"
-              onClick={() => loadEvents()}
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 hover:bg-zinc-50"
-            >
+            <button type="button" onClick={() => loadEvents()} className="inline-flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 hover:bg-zinc-50">
               <Filter className="h-4 w-4" />
               应用筛选
             </button>
@@ -117,30 +89,16 @@ export function SecurityEventsPage() {
       </section>
 
       <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-        {events.length === 0 ? (
-          <div className="p-8 text-center text-sm text-zinc-500">暂无安全事件。</div>
-        ) : (
+        {events.length === 0 ? <div className="p-8 text-center text-sm text-zinc-500">暂无安全事件。</div> : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
-                <tr>
-                  <th className="px-4 py-3">事件类型</th>
-                  <th className="px-4 py-3">行为类别</th>
-                  <th className="px-4 py-3">风险</th>
-                  <th className="px-4 py-3">置信度</th>
-                  <th className="px-4 py-3">目标</th>
-                  <th className="px-4 py-3">摘要</th>
-                  <th className="px-4 py-3">时间</th>
-                </tr>
-              </thead>
+              <thead className="bg-zinc-50 text-xs uppercase text-zinc-500"><tr><th className="px-4 py-3">事件类型</th><th className="px-4 py-3">行为类别</th><th className="px-4 py-3">风险</th><th className="px-4 py-3">置信度</th><th className="px-4 py-3">目标</th><th className="px-4 py-3">摘要</th><th className="px-4 py-3">时间</th></tr></thead>
               <tbody className="divide-y divide-zinc-100">
                 {events.map((event) => (
                   <tr key={event.id}>
-                    <td className="px-4 py-3 font-mono text-xs">{event.eventType}</td>
+                    <td className="px-4 py-3 font-mono text-xs"><Link className="text-emerald-700 hover:text-emerald-800" to={`/events/${event.id}`}>{event.eventType}</Link></td>
                     <td className="px-4 py-3">{event.behaviorClass ? BEHAVIOR_CLASS_LABELS[event.behaviorClass as BehaviorClass] ?? event.behaviorClass : '-'}</td>
-                    <td className="px-4 py-3">
-                      <Badge tone={event.riskLevel === 'high' || event.riskLevel === 'critical' ? 'danger' : 'warning'}>{RISK_LEVEL_LABELS[event.riskLevel]}</Badge>
-                    </td>
+                    <td className="px-4 py-3"><Badge tone={event.riskLevel === 'high' || event.riskLevel === 'critical' ? 'danger' : 'warning'}>{RISK_LEVEL_LABELS[event.riskLevel]}</Badge></td>
                     <td className="px-4 py-3">{event.confidence === null || event.confidence === undefined ? '-' : `${Math.round(event.confidence * 100)}%`}</td>
                     <td className="max-w-xs truncate px-4 py-3 text-zinc-600">{event.targetUrl ?? event.selector ?? '-'}</td>
                     <td className="max-w-md truncate px-4 py-3 text-zinc-600">{event.summary ?? '-'}</td>
@@ -153,5 +111,14 @@ export function SecurityEventsPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function TextFilter({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
+  return (
+    <label className="grid gap-1 text-sm">
+      <span className="text-xs text-zinc-500">{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-10 rounded-lg border border-zinc-200 px-3 text-sm outline-none focus:border-emerald-400" />
+    </label>
   );
 }
