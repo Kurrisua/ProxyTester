@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from contextlib import AbstractContextManager
 
 from core.interfaces.checker_base import BaseProxyRepository
@@ -14,7 +15,6 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
         self.conn = create_connection()
         self.cursor = self.conn.cursor()
         self.logger.info("Opened MySQL connection for proxy repository")
-        self._ensure_columns()
 
     def __enter__(self):
         return self
@@ -23,20 +23,6 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
         self.logger.info("Closing MySQL connection for proxy repository")
         self.cursor.close()
         self.conn.close()
-
-    def _ensure_columns(self) -> None:
-        for column, ddl in {
-            "business_score": "ALTER TABLE proxies ADD COLUMN business_score INT DEFAULT 0",
-            "quality_score": "ALTER TABLE proxies ADD COLUMN quality_score INT DEFAULT 0",
-            "security_risk": "ALTER TABLE proxies ADD COLUMN security_risk VARCHAR(32) DEFAULT 'unknown'",
-        }.items():
-            try:
-                self.cursor.execute(f"SHOW COLUMNS FROM proxies LIKE '{column}'")
-                if not self.cursor.fetchone():
-                    self.cursor.execute(ddl)
-                    self.conn.commit()
-            except Exception:
-                self.conn.rollback()
 
     def save_proxy(self, proxy: ProxyModel) -> None:
         data = proxy.to_db_dict()
@@ -58,7 +44,17 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
                     last_check_time = %s,
                     is_alive = %s,
                     quality_score = %s,
-                    security_risk = %s
+                    security_risk = %s,
+                    security_score = %s,
+                    behavior_class = %s,
+                    risk_tags = %s,
+                    has_content_tampering = %s,
+                    has_resource_replacement = %s,
+                    has_mitm_risk = %s,
+                    anomaly_trigger_count = %s,
+                    security_check_count = %s,
+                    anomaly_trigger_rate = %s,
+                    last_security_check_time = %s
                 WHERE id = %s
                 """,
                 (
@@ -75,6 +71,16 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
                     data["is_alive"],
                     data["quality_score"],
                     data["security_risk"],
+                    data["security_score"],
+                    data["behavior_class"],
+                    self._json(data["risk_tags"]),
+                    data["has_content_tampering"],
+                    data["has_resource_replacement"],
+                    data["has_mitm_risk"],
+                    data["anomaly_trigger_count"],
+                    data["security_check_count"],
+                    data["anomaly_trigger_rate"],
+                    data["last_security_check_time"],
                     existing["id"],
                 ),
             )
@@ -84,8 +90,11 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
                 INSERT INTO proxies (
                     ip, port, source, country, city, proxy_type, anonymity,
                     response_time, business_score, success_count, fail_count,
-                    last_check_time, is_alive, quality_score, security_risk
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    last_check_time, is_alive, quality_score, security_risk,
+                    security_score, behavior_class, risk_tags, has_content_tampering,
+                    has_resource_replacement, has_mitm_risk, anomaly_trigger_count,
+                    security_check_count, anomaly_trigger_rate, last_security_check_time
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     data["ip"],
@@ -103,6 +112,16 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
                     data["is_alive"],
                     data["quality_score"],
                     data["security_risk"],
+                    data["security_score"],
+                    data["behavior_class"],
+                    self._json(data["risk_tags"]),
+                    data["has_content_tampering"],
+                    data["has_resource_replacement"],
+                    data["has_mitm_risk"],
+                    data["anomaly_trigger_count"],
+                    data["security_check_count"],
+                    data["anomaly_trigger_rate"],
+                    data["last_security_check_time"],
                 ),
             )
         self.conn.commit()
@@ -117,15 +136,24 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
         if filters.get("proxy_type"):
             conditions.append("proxy_type LIKE %s")
             params.append(f"%{filters['proxy_type']}%")
-        if filters.get("status") == "存活":
+        if filters.get("status") == "alive":
             conditions.append("is_alive = 1 AND response_time < 500")
-        elif filters.get("status") == "失效":
+        elif filters.get("status") == "dead":
             conditions.append("is_alive = 0")
-        elif filters.get("status") == "缓慢":
+        elif filters.get("status") == "slow":
             conditions.append("is_alive = 1 AND response_time >= 500")
         if filters.get("min_business_score") is not None:
             conditions.append("business_score >= %s")
             params.append(filters["min_business_score"])
+        if filters.get("security_risk"):
+            conditions.append("security_risk = %s")
+            params.append(filters["security_risk"])
+        if filters.get("behavior_class"):
+            conditions.append("behavior_class = %s")
+            params.append(filters["behavior_class"])
+        if filters.get("risk_tag"):
+            conditions.append("JSON_CONTAINS(COALESCE(risk_tags, JSON_ARRAY()), JSON_QUOTE(%s))")
+            params.append(filters["risk_tag"])
 
         sql = "SELECT * FROM proxies"
         if conditions:
@@ -222,6 +250,17 @@ class MySQLProxyRepository(BaseProxyRepository, AbstractContextManager):
         )
         return [ProxyModel.from_db_row(row) for row in self.cursor.fetchall()]
 
+    def get_proxy_by_address(self, ip: str, port: int) -> ProxyModel | None:
+        self.cursor.execute("SELECT * FROM proxies WHERE ip = %s AND port = %s", (ip, port))
+        row = self.cursor.fetchone()
+        return ProxyModel.from_db_row(row) if row else None
+
     def delete_proxy(self, ip: str, port: int) -> None:
         self.cursor.execute("DELETE FROM proxies WHERE ip = %s AND port = %s", (ip, port))
         self.conn.commit()
+
+    @staticmethod
+    def _json(value) -> str | None:
+        if value is None:
+            return None
+        return json.dumps(value, ensure_ascii=False, default=str)

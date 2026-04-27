@@ -17,6 +17,9 @@ def get_proxies():
             "proxy_type": request.args.get("type"),
             "status": request.args.get("status"),
             "min_business_score": request.args.get("min_business_score", type=int),
+            "security_risk": request.args.get("securityRisk") or request.args.get("security_risk"),
+            "behavior_class": request.args.get("behaviorClass") or request.args.get("behavior_class"),
+            "risk_tag": request.args.get("riskTag") or request.args.get("risk_tag"),
         }
         page = request.args.get("page", default=1, type=int)
         limit = request.args.get("limit", default=10, type=int)
@@ -57,6 +60,18 @@ def get_high_quality_proxies():
         service.close()
 
 
+@proxy_bp.route("/api/proxies/<ip>:<port>", methods=["GET"])
+def get_proxy_detail(ip: str, port: str):
+    service = ProxyQueryService()
+    try:
+        detail = service.get_proxy_detail(ip, int(port))
+        if detail is None:
+            return jsonify({"error": "proxy_not_found", "proxy": f"{ip}:{port}"}), 404
+        return jsonify(detail)
+    finally:
+        service.close()
+
+
 @proxy_bp.route("/api/proxies/<ip>:<port>", methods=["DELETE"])
 def delete_proxy(ip: str, port: str):
     service = ProxyQueryService()
@@ -80,7 +95,7 @@ def refresh_proxies():
     return jsonify(
         {
             "success": True,
-            "message": "刷新任务完成",
+            "message": "refresh_completed",
             "aliveCount": summary["aliveCount"],
             "collectedCount": summary["collectedCount"],
             "jsonRecordCount": summary["jsonRecordCount"],

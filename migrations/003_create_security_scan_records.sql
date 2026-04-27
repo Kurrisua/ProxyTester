@@ -1,0 +1,51 @@
+-- Phase 0 draft migration. Stores per-proxy, per-stage scan summaries.
+
+CREATE TABLE security_scan_records (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    batch_id BIGINT UNSIGNED NOT NULL,
+    proxy_id INT NULL,
+    proxy_ip VARCHAR(64) NOT NULL,
+    proxy_port INT NOT NULL,
+    round_index INT NOT NULL DEFAULT 1,
+    funnel_stage INT NOT NULL DEFAULT 0,
+    stage VARCHAR(64) NOT NULL,
+    checker_name VARCHAR(128) NOT NULL,
+    scan_depth VARCHAR(32) NOT NULL DEFAULT 'light',
+    applicability VARCHAR(32) NOT NULL DEFAULT 'applicable',
+    execution_status VARCHAR(32) NOT NULL DEFAULT 'completed',
+    outcome VARCHAR(32) NOT NULL DEFAULT 'normal',
+    skip_reason VARCHAR(255) NULL,
+    precondition_summary JSON NULL,
+    target_url VARCHAR(2048) NULL,
+    target_type VARCHAR(64) NULL,
+    access_mode VARCHAR(32) NULL,
+    user_agent VARCHAR(512) NULL,
+    started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    elapsed_ms DOUBLE NULL,
+    direct_status_code INT NULL,
+    proxy_status_code INT NULL,
+    direct_hash CHAR(64) NULL,
+    proxy_hash CHAR(64) NULL,
+    is_anomalous TINYINT(1) NOT NULL DEFAULT 0,
+    risk_level VARCHAR(32) NOT NULL DEFAULT 'unknown',
+    risk_tags JSON NULL,
+    diff_summary JSON NULL,
+    cert_summary JSON NULL,
+    resource_summary JSON NULL,
+    evidence JSON NULL,
+    error_message TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_security_scan_records_batch_proxy_round (batch_id, proxy_id, round_index),
+    KEY idx_security_scan_records_proxy_time (proxy_id, started_at),
+    KEY idx_security_scan_records_stage_checker (stage, checker_name),
+    KEY idx_security_scan_records_applicability (applicability),
+    KEY idx_security_scan_records_execution_status (execution_status),
+    KEY idx_security_scan_records_funnel_stage (funnel_stage),
+    CONSTRAINT fk_security_scan_records_batch
+        FOREIGN KEY (batch_id) REFERENCES security_scan_batches(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_security_scan_records_proxy
+        FOREIGN KEY (proxy_id) REFERENCES proxies(id)
+        ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

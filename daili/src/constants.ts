@@ -1,78 +1,12 @@
-import { ProxyNode } from './types';
+import { DashboardStats, ProxyNode } from './types';
 
-export const MOCK_PROXIES: ProxyNode[] = [
-  {
-    id: '1',
-    ip: '185.193.125.14',
-    port: 3128,
-    source: 'Luminati',
-    location: { country: 'USA', city: 'NY', flag: '🇺🇸', lat: 40.7128, lng: -74.0060 },
-    types: ['SOCKS5', 'HTTP'],
-    anonymity: '高匿',
-    speed: 142,
-    successRate: 98.2,
-    lastCheck: '2 分钟前',
-    status: '存活',
-  },
-  {
-    id: '2',
-    ip: '92.212.8.215',
-    port: 8080,
-    source: 'Oxylabs',
-    location: { country: 'Germany', city: 'Berlin', flag: '🇩🇪', lat: 52.5200, lng: 13.4050 },
-    types: ['HTTP', 'HTTPS'],
-    anonymity: '透明',
-    speed: 512,
-    successRate: 84.5,
-    lastCheck: '12 分钟前',
-    status: '存活',
-  },
-  {
-    id: '3',
-    ip: '103.45.12.99',
-    port: 3128,
-    source: 'OpenProxy',
-    location: { country: 'Japan', city: 'Tokyo', flag: '🇯🇵', lat: 35.6762, lng: 139.6503 },
-    types: ['HTTPS'],
-    anonymity: '匿名',
-    speed: 0,
-    successRate: 12.0,
-    lastCheck: '45 分钟前',
-    status: '失效',
-  },
-  {
-    id: '4',
-    ip: '45.88.2.110',
-    port: 80,
-    source: 'Proxy6',
-    location: { country: 'UK', city: 'London', flag: '🇬🇧', lat: 51.5074, lng: -0.1278 },
-    types: ['HTTP'],
-    anonymity: '高匿',
-    speed: 221,
-    successRate: 94.1,
-    lastCheck: '5 分钟前',
-    status: '存活',
-  },
-  {
-    id: '5',
-    ip: '192.168.1.1',
-    port: 1080,
-    source: 'Local',
-    location: { country: 'China', city: 'Beijing', flag: '🇨🇳', lat: 39.9042, lng: 116.4074 },
-    types: ['SOCKS5'],
-    anonymity: '高匿',
-    speed: 45,
-    successRate: 99.9,
-    lastCheck: '1 分钟前',
-    status: '存活',
-  }
-];
+export const MOCK_PROXIES: ProxyNode[] = [];
 
-export const MOCK_STATS = {
-  totalProxies: 12482,
-  activeProxies: 8912,
-  countriesCount: 42,
-  avgResponseTime: 245,
-  responseTimeChange: -40,
-  activeChange: 12,
+export const MOCK_STATS: DashboardStats = {
+  totalProxies: 0,
+  activeProxies: 0,
+  countriesCount: 0,
+  avgResponseTime: 0,
+  responseTimeChange: 0,
+  activeChange: 0,
 };
