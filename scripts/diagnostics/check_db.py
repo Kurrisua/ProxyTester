@@ -1,15 +1,19 @@
-import pymysql
+from pathlib import Path
+import sys
 
-# 连接数据库
-conn = pymysql.connect(
-    host="localhost",
-    port=3307,
-    user="root",
-    password="123456",
-    database="proxy_pool",
-    charset='utf8mb4',
-    cursorclass=pymysql.cursors.DictCursor
-)
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from storage.mysql.connection import create_connection, get_connection_config
+
+
+config = get_connection_config()
+safe_config = {key: value for key, value in config.items() if key not in {"password", "cursorclass"}}
+print("数据库连接配置:", safe_config)
+
+conn = create_connection()
 
 cursor = conn.cursor()
 

@@ -44,10 +44,12 @@ ProxyTester/
   migrations/                    MySQL schema migration SQL
   scheduler/                     检测 pipeline
   scoring/                       基础评分和安全评分
+  scripts/                       运行、诊断、兼容和 migration 检查脚本
   security/                      蜜罐、DOM、资源、MITM、动态观测等安全检测
   services/                      工作流服务、查询服务、检测服务
   storage/mysql/                 MySQL 连接和 repository
   tests/                         Python 单元测试
+  third_party/                   内嵌第三方工具和离线技能包
 ```
 
 ---
@@ -82,6 +84,8 @@ $env:PROXYTESTER_DB_PASSWORD="你的密码"
 $env:PROXYTESTER_DB_NAME="proxy_pool"
 ```
 
+兼容说明：代码仍会回退读取旧变量名 `DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`，但新部署建议统一使用 `PROXYTESTER_DB_*`。
+
 ---
 
 ## 4. 快速启动
@@ -103,13 +107,13 @@ python -m venv .venv
 
 ### 4.3 安装 Python 依赖
 
-如果仓库内已有依赖文件，优先使用：
+仓库根目录提供 `requirements.txt`：
 
 ```powershell
 python -m pip install -r requirements.txt
 ```
 
-如果依赖已经安装在 `.venv` 中，可以直接进入下一步。
+其中包含 Flask API、MySQL、HTTP/SOCKS 请求支持、测试和诊断脚本依赖。SOCKS 代理访问依赖 `requests[socks]`。
 
 ### 4.4 安装前端依赖
 
@@ -124,6 +128,20 @@ cd C:\MyProjects\ProxyTester
 ## 5. 初始化数据库
 
 项目使用 MySQL，schema 由 `migrations/` 下 SQL 文件维护。不要再依赖业务代码隐式 `ALTER TABLE` 来补表结构。
+
+先检查本地 migration 文件是否齐全：
+
+```powershell
+python scripts\check_migrations.py
+```
+
+如果需要检查当前 MySQL schema 是否已经具备规划表和关键字段，可以运行只读检查：
+
+```powershell
+python scripts\check_migrations.py --check-db
+```
+
+该命令只查询 `information_schema` 和数据库版本，不会建表、改表或迁移数据。真正执行任何 SQL migration 前，必须先备份并取得明确授权。
 
 建议按顺序执行：
 
@@ -208,6 +226,25 @@ http://localhost:5000/honeypot/download/sample.txt
 http://localhost:5000/honeypot/download/sample.zip
 ```
 
+### 6.1 安全检测目标配置
+
+安全 checker 依赖以下目标 URL。没有配置时，相关检测会记录为 `skipped`，不会被解释为安全：
+
+```powershell
+$env:HONEYPOT_BASE_URL="http://localhost:5000/honeypot/static/basic"
+$env:MITM_TARGET_URL="https://你明确授权检测的 HTTPS 目标"
+$env:HONEYPOT_HTTPS_URL="https://你的 HTTPS 蜜罐目标"
+```
+
+配置语义：
+
+- `HONEYPOT_BASE_URL`：用于轻量蜜罐、DOM/HTML 差分和资源完整性检测。建议优先指向本项目自建蜜罐。
+- `MITM_TARGET_URL`：用于 TLS 证书直连 vs 代理路径对比，必须是 HTTPS URL，且应为自建或明确授权目标。
+- `HONEYPOT_HTTPS_URL`：HTTPS 蜜罐目标备用配置；当 `MITM_TARGET_URL` 未设置时，MITM checker 会尝试使用它。
+- `HONEYPOT_TIMEOUT_SECONDS`、`MITM_TIMEOUT_SECONDS`：可选超时配置，默认均为 10 秒。
+
+不建议默认对第三方真实站点做安全研究检测。未配置 HTTPS 目标时，MITM 检测会以 `skipped` / `not_applicable` 进入记录。
+
 ---
 
 ## 7. 启动前端
@@ -222,7 +259,7 @@ npm run dev
 默认前端地址通常是：
 
 ```text
-http://localhost:5173
+http://localhost:3000
 ```
 
 前端会请求：

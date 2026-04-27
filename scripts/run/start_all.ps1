@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
 
 # 启动所有服务的脚本
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 
 Write-Host "===================================="
 Write-Host "代理测试工具启动脚本"
@@ -31,7 +32,7 @@ try {
 
 # 进入项目目录
 Write-Host "进入项目目录..."
-Set-Location -Path "$PSScriptRoot"
+Set-Location -Path "$ProjectRoot"
 
 # 检查前端依赖是否安装
 if (-not (Test-Path "daili\node_modules")) {
@@ -48,7 +49,7 @@ if (-not (Test-Path "daili\node_modules")) {
 
 # 启动 API 服务器
 Write-Host "启动 API 服务器..."
-Start-Process -FilePath "python" -ArgumentList "api.py" -WorkingDirectory "$PSScriptRoot" -WindowStyle "Normal"
+Start-Process -FilePath "python" -ArgumentList "api.py" -WorkingDirectory "$ProjectRoot" -WindowStyle "Normal"
 
 # 等待 API 服务器启动
 Write-Host "等待 API 服务器启动..."
@@ -56,7 +57,7 @@ Start-Sleep -Seconds 3
 
 # 启动前端开发服务器
 Write-Host "启动前端开发服务器..."
-Start-Process -FilePath "npm" -ArgumentList "run dev" -WorkingDirectory "$PSScriptRoot\daili" -WindowStyle "Normal"
+Start-Process -FilePath "npm" -ArgumentList "run dev" -WorkingDirectory "$ProjectRoot\daili" -WindowStyle "Normal"
 
 # 等待前端服务器启动
 Write-Host "等待前端服务器启动..."

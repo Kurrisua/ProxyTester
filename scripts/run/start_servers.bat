@@ -1,4 +1,6 @@
 @echo off
+set "PROJECT_ROOT=%~dp0..\.."
+pushd "%PROJECT_ROOT%"
 
 REM Start API server
 echo Starting API server...
@@ -22,3 +24,4 @@ echo Frontend: http://localhost:3000
 REM Pause to view output
 echo Press any key to exit...
 pause
+popd
