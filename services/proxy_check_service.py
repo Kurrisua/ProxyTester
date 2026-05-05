@@ -22,13 +22,21 @@ class ProxyCheckService:
         self.logger.info("Loading proxies from file: %s", file_path)
         return FileProxyCollector().collect(file_path)
 
-    def run_full_check(self, proxies, max_workers: int = 150, save_to_db: bool = True):
+    def run_full_check(
+        self,
+        proxies,
+        max_workers: int = 150,
+        save_to_db: bool = True,
+        max_scan_depth: str = "standard",
+        scan_policy: dict | None = None,
+    ):
         total = len(proxies)
         self.logger.info(
-            "Preparing full proxy check (count=%s, max_workers=%s, save_to_db=%s)",
+            "Preparing full proxy check (count=%s, max_workers=%s, save_to_db=%s, max_scan_depth=%s)",
             total,
             max_workers,
             save_to_db,
+            max_scan_depth,
         )
         repository = self.repository
         scan_repository = self.scan_repository
@@ -50,7 +58,10 @@ class ProxyCheckService:
             scan_repository=scan_repository if save_to_db else self.scan_repository,
             max_workers=max_workers,
         )
-        contexts = pipeline.run_batch(proxies)
+        runtime = {"max_scan_depth": max_scan_depth}
+        if scan_policy:
+            runtime["scan_policy"] = scan_policy
+        contexts = pipeline.run_batch(proxies, runtime=runtime)
         self.last_batch_id = pipeline.last_batch_id
         alive = [context.proxy for context in contexts if context.proxy.is_alive]
         self.logger.info("Full proxy check completed: %s/%s proxies alive", len(alive), total)

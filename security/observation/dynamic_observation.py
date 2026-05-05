@@ -99,7 +99,11 @@ class DynamicObservationRunner:
             for step in plan.steps:
                 if step.wait_seconds > 0:
                     sleep(step.wait_seconds)
-                contexts.append(self.pipeline.run_for_proxy(proxy, batch_id=batch_id, runtime=step.to_runtime()))
+                runtime = step.to_runtime()
+                runtime.setdefault("max_scan_depth", plan.max_scan_depth)
+                runtime.setdefault("allowed_cost_levels", ["low", "medium", "high"])
+                runtime.setdefault("scan_policy_name", plan.scan_policy)
+                contexts.append(self.pipeline.run_for_proxy(proxy, batch_id=batch_id, runtime=runtime))
         except Exception as exc:
             if self.scan_repository:
                 self.scan_repository.finish_batch(batch_id, "error", str(exc))

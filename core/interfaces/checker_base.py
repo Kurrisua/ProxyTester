@@ -27,6 +27,14 @@ class BaseSecurityChecker(ABC):
     stage = "security"
     order = 100
     enabled = True
+    funnel_stage = 0
+    scan_depth = "light"
+    cost_level = "low"
+    required_capabilities: tuple[str, ...] = ()
+    required_config: tuple[str, ...] = ()
+    required_results: tuple[str, ...] = ()
+    produces_events: tuple[str, ...] = ()
+    description = ""
 
     @abstractmethod
     def supports(self, context: CheckContext) -> bool:

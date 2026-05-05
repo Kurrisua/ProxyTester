@@ -16,6 +16,13 @@ class ResourceIntegrityChecker(BaseSecurityChecker):
     name = "resource_integrity_checker"
     stage = "resource_integrity"
     order = 25
+    funnel_stage = 5
+    scan_depth = "standard"
+    cost_level = "medium"
+    required_capabilities = ("usable",)
+    required_config = ("HONEYPOT_BASE_URL",)
+    produces_events = ("resource_replacement",)
+    description = "Compares manifest-declared honeypot resources through direct and proxied access."
 
     def supports(self, context: CheckContext) -> bool:
         return context.proxy.is_usable
@@ -31,7 +38,8 @@ class ResourceIntegrityChecker(BaseSecurityChecker):
                 execution_status=ExecutionStatus.SKIPPED.value,
                 outcome=ScanOutcome.SKIPPED.value,
                 skip_reason="honeypot_url_not_configured",
-                funnel_stage=5,
+                funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 evidence={"status": "skipped", "note": "set HONEYPOT_BASE_URL to enable resource integrity checks"},
             )
 
@@ -51,7 +59,8 @@ class ResourceIntegrityChecker(BaseSecurityChecker):
                 execution_status=ExecutionStatus.ERROR.value,
                 outcome=ScanOutcome.ERROR.value,
                 error=manifest_result.error_message or "honeypot_manifest_unavailable",
-                funnel_stage=5,
+                funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 evidence={"manifest": manifest_result.__dict__},
             )
 
@@ -65,7 +74,8 @@ class ResourceIntegrityChecker(BaseSecurityChecker):
                 execution_status=ExecutionStatus.SKIPPED.value,
                 outcome=ScanOutcome.SKIPPED.value,
                 skip_reason="honeypot_manifest_has_no_resources",
-                funnel_stage=5,
+                funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 evidence={"manifestUrl": manifest_url},
             )
 
@@ -105,8 +115,8 @@ class ResourceIntegrityChecker(BaseSecurityChecker):
             risk_tags=risk_tags,
             execution_status=ExecutionStatus.COMPLETED.value,
             outcome=outcome,
-            funnel_stage=5,
-            scan_depth="light",
+            funnel_stage=self.funnel_stage,
+            scan_depth=self.scan_depth,
             evidence={
                 "manifestUrl": manifest_url,
                 "roundIndex": context.runtime.get("round_index", 1),
