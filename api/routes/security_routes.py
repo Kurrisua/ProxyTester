@@ -207,6 +207,8 @@ def _run_security_scan(addresses) -> tuple:
     payload = request.get_json(silent=True) if request.is_json else {}
     payload = payload if isinstance(payload, dict) else {}
     max_workers = int(payload.get("maxWorkers", 20))
+    max_scan_depth = str(payload.get("maxScanDepth", payload.get("max_scan_depth", "standard")))
+    scan_policy = payload.get("scanPolicy") if isinstance(payload.get("scanPolicy"), dict) else None
     if isinstance(addresses, str):
         addresses = [addresses]
 
@@ -227,7 +229,13 @@ def _run_security_scan(addresses) -> tuple:
         return jsonify({"error": "no_matching_proxies", "requested": addresses}), 404
 
     checker = ProxyCheckService()
-    alive = checker.run_full_check(proxies, max_workers=max_workers, save_to_db=True)
+    alive = checker.run_full_check(
+        proxies,
+        max_workers=max_workers,
+        save_to_db=True,
+        max_scan_depth=max_scan_depth,
+        scan_policy=scan_policy,
+    )
     return jsonify(
         {
             "success": True,
@@ -235,6 +243,7 @@ def _run_security_scan(addresses) -> tuple:
             "batchId": checker.last_batch_id,
             "targetProxyCount": len(proxies),
             "aliveCount": len(alive),
+            "maxScanDepth": max_scan_depth,
         }
     )
 

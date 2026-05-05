@@ -9,16 +9,18 @@ from core.context.check_context import CheckContext
 from core.models.enums import Applicability, ExecutionStatus, RiskLevel, ScanOutcome
 from core.models.results import CheckResult, SecurityResult
 from core.models.scan_record import SecurityScanBatch, SecurityScanRecord
+from security.policy import CapabilityRouter, ScanPolicy
 
 
 class CheckPipeline:
-    def __init__(self, checkers, security_checkers, scorers, repository=None, scan_repository=None, max_workers: int = 100):
+    def __init__(self, checkers, security_checkers, scorers, repository=None, scan_repository=None, max_workers: int = 100, policy_router=None):
         self.checkers = sorted(checkers, key=lambda item: item.order)
         self.security_checkers = sorted(security_checkers, key=lambda item: item.order)
         self.scorers = scorers
         self.repository = repository
         self.scan_repository = scan_repository
         self.max_workers = max_workers
+        self.policy_router = policy_router or CapabilityRouter()
         self.logger = logging.getLogger(__name__)
         self.last_batch_id: str | None = None
 
@@ -58,12 +60,12 @@ class CheckPipeline:
                 blocked = True
 
         if context.proxy.is_usable:
+            scan_policy = ScanPolicy.from_runtime(context.runtime)
+            context.runtime.setdefault("scan_policy", scan_policy)
             for checker in self.security_checkers:
-                if not checker.enabled:
-                    self._record_security_result(context, self._build_skipped_security_result(checker, "checker_disabled"))
-                    continue
-                if not checker.supports(context):
-                    self._record_security_result(context, self._build_not_applicable_security_result(checker))
+                decision = self.policy_router.decide(checker, context, scan_policy)
+                if not decision.should_run:
+                    self._record_security_result(context, self._build_policy_security_result(checker, decision))
                     continue
                 try:
                     result = checker.check(context)
@@ -82,7 +84,7 @@ class CheckPipeline:
 
         return context
 
-    def run_batch(self, proxies):
+    def run_batch(self, proxies, runtime: dict | None = None):
         contexts = []
         total = len(proxies)
         batch_id = str(uuid4())
@@ -93,7 +95,7 @@ class CheckPipeline:
         started_at = perf_counter()
         self.logger.info("Starting check batch for %s proxies with max_workers=%s", total, self.max_workers)
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            future_map = {executor.submit(self.run_for_proxy, proxy, batch_id): proxy for proxy in proxies}
+            future_map = {executor.submit(self.run_for_proxy, proxy, batch_id, runtime): proxy for proxy in proxies}
             for index, future in enumerate(as_completed(future_map), start=1):
                 proxy = future_map[future]
                 try:
@@ -297,6 +299,27 @@ class CheckPipeline:
             skip_reason=reason,
             funnel_stage=getattr(checker, "funnel_stage", 0),
             scan_depth=getattr(checker, "scan_depth", "light"),
+        )
+
+    @staticmethod
+    def _build_policy_security_result(checker, decision) -> SecurityResult:
+        return SecurityResult(
+            checker_name=checker.name,
+            success=False,
+            stage=getattr(checker, "stage", "security"),
+            applicability=decision.applicability,
+            execution_status=decision.execution_status,
+            outcome=decision.outcome,
+            skip_reason=decision.reason,
+            funnel_stage=getattr(checker, "funnel_stage", 0),
+            scan_depth=getattr(checker, "scan_depth", "light"),
+            precondition_summary=decision.precondition_summary,
+            evidence={
+                "status": "skipped" if decision.outcome == ScanOutcome.SKIPPED.value else decision.outcome,
+                "reason": decision.reason,
+                "policy": decision.precondition_summary.get("policy", {}),
+                "checker": decision.precondition_summary.get("checker", {}),
+            },
         )
 
     @staticmethod
