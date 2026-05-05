@@ -11,6 +11,11 @@ class TrafficAnalysisChecker(BaseSecurityChecker):
     stage = "dynamic_observation"
     order = 40
     funnel_stage = 7
+    scan_depth = "multi_round"
+    cost_level = "high"
+    required_capabilities = ("usable",)
+    produces_events = ("conditional_trigger", "delayed_trigger")
+    description = "Aggregates multi-round observations to identify conditional or delayed proxy behavior."
 
     def supports(self, context: CheckContext) -> bool:
         return context.proxy.is_usable
@@ -69,7 +74,7 @@ class TrafficAnalysisChecker(BaseSecurityChecker):
             execution_status=ExecutionStatus.COMPLETED.value,
             outcome=ScanOutcome.ANOMALOUS.value if anomalous else ScanOutcome.NORMAL.value,
             funnel_stage=self.funnel_stage,
-            scan_depth="multi_round",
+            scan_depth=self.scan_depth,
             precondition_summary={
                 "roundIndex": round_index,
                 "observationStep": observation_step,

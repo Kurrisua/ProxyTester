@@ -13,7 +13,15 @@ from security.rules import classify_html_diff
 
 class HoneypotChecker(BaseSecurityChecker):
     name = "honeypot_checker"
+    stage = "honeypot_diff"
     order = 10
+    funnel_stage = 3
+    scan_depth = "light"
+    cost_level = "low"
+    required_capabilities = ("usable",)
+    required_config = ("HONEYPOT_BASE_URL",)
+    produces_events = ("content_tampering",)
+    description = "Compares a controlled honeypot page through direct and proxied access."
 
     def supports(self, context: CheckContext) -> bool:
         return context.proxy.is_usable
@@ -28,6 +36,8 @@ class HoneypotChecker(BaseSecurityChecker):
                 execution_status=ExecutionStatus.SKIPPED.value,
                 outcome=ScanOutcome.SKIPPED.value,
                 skip_reason="honeypot_url_not_configured",
+                funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 evidence={"status": "skipped", "note": "set HONEYPOT_BASE_URL to enable direct vs proxy comparison"},
             )
 
@@ -46,6 +56,8 @@ class HoneypotChecker(BaseSecurityChecker):
                 execution_status=ExecutionStatus.ERROR.value,
                 outcome=ScanOutcome.ERROR.value,
                 error=direct.error_message,
+                funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 evidence={"targetUrl": target_url, "roundIndex": context.runtime.get("round_index", 1), "userAgent": context.runtime.get("user_agent"), "direct": direct.__dict__, "proxy": proxied.__dict__},
             )
         if not proxied.success:
@@ -58,6 +70,8 @@ class HoneypotChecker(BaseSecurityChecker):
                 execution_status=status,
                 outcome=outcome,
                 error=proxied.error_message,
+                funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 evidence={"targetUrl": target_url, "roundIndex": context.runtime.get("round_index", 1), "userAgent": context.runtime.get("user_agent"), "direct": direct.__dict__, "proxy": proxied.__dict__},
             )
 
@@ -71,6 +85,8 @@ class HoneypotChecker(BaseSecurityChecker):
             risk_tags=risk_tags,
             execution_status=ExecutionStatus.COMPLETED.value,
             outcome=ScanOutcome.ANOMALOUS.value if anomalous else ScanOutcome.NORMAL.value,
+            funnel_stage=self.funnel_stage,
+            scan_depth=self.scan_depth,
             evidence={
                 "targetUrl": target_url,
                 "roundIndex": context.runtime.get("round_index", 1),

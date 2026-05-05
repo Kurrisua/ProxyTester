@@ -13,6 +13,12 @@ class DomDiffChecker(BaseSecurityChecker):
     stage = "dom_diff"
     order = 20
     funnel_stage = 4
+    scan_depth = "standard"
+    cost_level = "low"
+    required_capabilities = ("web",)
+    required_results = ("honeypot_checker",)
+    produces_events = ("script_injection", "content_tampering", "redirect_manipulation")
+    description = "Classifies structural HTML/DOM differences produced by the honeypot checker."
 
     def supports(self, context: CheckContext) -> bool:
         return context.proxy.http or context.proxy.https
@@ -60,7 +66,7 @@ class DomDiffChecker(BaseSecurityChecker):
             execution_status=ExecutionStatus.COMPLETED.value,
             outcome=ScanOutcome.ANOMALOUS.value if anomalous else ScanOutcome.NORMAL.value,
             funnel_stage=self.funnel_stage,
-            scan_depth="light",
+            scan_depth=self.scan_depth,
             evidence={
                 "targetUrl": (honeypot_result.evidence or {}).get("targetUrl"),
                 "roundIndex": (honeypot_result.evidence or {}).get("roundIndex"),

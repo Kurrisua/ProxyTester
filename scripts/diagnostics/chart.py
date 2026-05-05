@@ -1,28 +1,21 @@
-import pymysql
+from pathlib import Path
+import sys
+
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
 
 
-def get_env(key, default=None, required=False):
-    value = os.getenv(key, default)
-    if required and not value:
-        raise ValueError(f"环境变量 {key} 未设置！")
-    return value
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from storage.mysql.connection import create_connection, get_connection_config
 
 
 # ======================
 # 读取配置（带校验）
 # ======================
-db_config = {
-    "host": get_env("DB_HOST", "localhost"),
-    "port": int(get_env("DB_PORT", 3307)),
-    "user": get_env("DB_USER", "root"),
-    "password": get_env("DB_PASSWORD", required=True),  # ⭐必须有密码
-    "database": get_env("DB_NAME", "proxy_pool"),
-    "charset": "utf8mb4",
-    "cursorclass": pymysql.cursors.DictCursor
-}
+db_config = get_connection_config()
 
 # ======================
 # （可选）调试输出（不会打印密码）
@@ -40,13 +33,11 @@ print({
 # 建立连接
 # ======================
 try:
-    conn = pymysql.connect(**db_config)
+    conn = create_connection()
     print("✅ 数据库连接成功！")
 except Exception as e:
     print("❌ 数据库连接失败：", e)
     raise
-
-conn = pymysql.connect(**db_config)
 
 # 读取数据
 df = pd.read_sql("SELECT * FROM proxies", conn)

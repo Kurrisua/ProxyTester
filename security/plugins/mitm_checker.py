@@ -16,6 +16,11 @@ class MitmChecker(BaseSecurityChecker):
     stage = "mitm_detection"
     order = 30
     funnel_stage = 6
+    scan_depth = "standard"
+    cost_level = "medium"
+    required_capabilities = ("tls_proxy",)
+    produces_events = ("mitm_suspected",)
+    description = "Compares direct and proxied TLS certificate observations for an approved HTTPS target."
 
     def supports(self, context: CheckContext) -> bool:
         return context.proxy.https or context.proxy.socks5
@@ -32,6 +37,7 @@ class MitmChecker(BaseSecurityChecker):
                 outcome=ScanOutcome.SKIPPED.value,
                 skip_reason="mitm_target_url_not_configured",
                 funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 precondition_summary=self._preconditions(context),
                 evidence={"status": "skipped", "note": "set MITM_TARGET_URL or HONEYPOT_HTTPS_URL to enable TLS certificate comparison"},
             )
@@ -47,6 +53,7 @@ class MitmChecker(BaseSecurityChecker):
                 outcome=ScanOutcome.NOT_APPLICABLE.value,
                 skip_reason="mitm_target_must_be_https",
                 funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 precondition_summary={**self._preconditions(context), "targetUrl": target_url},
                 evidence={"targetUrl": target_url},
             )
@@ -90,6 +97,7 @@ class MitmChecker(BaseSecurityChecker):
                 outcome=ScanOutcome.ERROR.value,
                 error=direct.error_message,
                 funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 precondition_summary={**self._preconditions(context), "targetUrl": target_url},
                 evidence={"targetUrl": target_url, "direct": direct.__dict__, "proxy": proxied.__dict__, "diff": diff.to_dict(), "certificateObservations": observations},
             )
@@ -107,6 +115,7 @@ class MitmChecker(BaseSecurityChecker):
                 outcome=outcome,
                 error=proxied.error_message,
                 funnel_stage=self.funnel_stage,
+                scan_depth=self.scan_depth,
                 precondition_summary={**self._preconditions(context), "targetUrl": target_url},
                 evidence={"targetUrl": target_url, "direct": direct.__dict__, "proxy": proxied.__dict__, "diff": diff.to_dict(), "certificateObservations": observations},
             )
@@ -120,6 +129,7 @@ class MitmChecker(BaseSecurityChecker):
             execution_status=ExecutionStatus.COMPLETED.value,
             outcome=ScanOutcome.ANOMALOUS.value if anomalous else ScanOutcome.NORMAL.value,
             funnel_stage=self.funnel_stage,
+            scan_depth=self.scan_depth,
             precondition_summary={**self._preconditions(context), "targetUrl": target_url},
             evidence={
                 "targetUrl": target_url,
