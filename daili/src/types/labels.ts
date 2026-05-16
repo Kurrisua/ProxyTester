@@ -30,6 +30,15 @@ export const EXECUTION_STATUS_LABELS: Record<ExecutionStatus, string> = {
   timeout: '超时',
 };
 
+export const BATCH_STATUS_LABELS: Record<string, string> = {
+  pending: '等待中',
+  running: '执行中',
+  completed: '已完成',
+  failed: '执行失败',
+  error: '执行错误',
+  cancelled: '已取消',
+};
+
 export const APPLICABILITY_LABELS: Record<Applicability, string> = {
   applicable: '适用',
   not_applicable: '不适用',

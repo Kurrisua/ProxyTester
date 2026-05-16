@@ -5,7 +5,7 @@ import { FunnelStepper } from '../../../components/security/FunnelStepper';
 import { Badge } from '../../../components/ui/Badge';
 import { ErrorState } from '../../../components/ui/ErrorState';
 import { LoadingState } from '../../../components/ui/LoadingState';
-import { EXECUTION_STATUS_LABELS, RISK_LEVEL_LABELS, SCAN_OUTCOME_LABELS } from '../../../types/labels';
+import { BATCH_STATUS_LABELS,EXECUTION_STATUS_LABELS, RISK_LEVEL_LABELS, SCAN_OUTCOME_LABELS } from '../../../types/labels';
 import { SecurityBatchDetail, SecurityBatchSummary } from '../../../types';
 
 const PAGE_LIMIT = 20;
@@ -89,7 +89,7 @@ export function SecurityBatchesPage() {
                   <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" />
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge>{batch.status}</Badge>
+                  <Badge tone={batchStatusTone(batch.status)}>{BATCH_STATUS_LABELS[batch.status] ?? batch.status}</Badge>
                   <Badge tone="neutral">{batch.maxScanDepth ?? 'basic'}</Badge>
                 </div>
                 <div className="mt-2 text-xs text-zinc-500">目标 {batch.targetProxyCount}，已检 {batch.checkedProxyCount}，异常 {batch.anomalyEventCount}</div>
@@ -108,7 +108,7 @@ export function SecurityBatchesPage() {
                   <h2 className="text-lg font-bold">批次详情</h2>
                   <p className="mt-1 font-mono text-xs text-zinc-500">{detail.batch.batchId}</p>
                 </div>
-                <Badge>{detail.batch.status}</Badge>
+                <Badge tone={batchStatusTone(detail.batch.status)}>{BATCH_STATUS_LABELS[detail.batch.status] ?? detail.batch.status}</Badge>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-4">
                 <Metric label="目标代理" value={detail.batch.targetProxyCount} />
@@ -150,6 +150,24 @@ export function SecurityBatchesPage() {
       </section>
     </div>
   );
+}
+
+function batchStatusTone(status: string) {
+  switch (status) {
+    case 'completed':
+      return 'success';
+    case 'running':
+      return 'info';
+    case 'pending':
+      return 'warning';
+    case 'failed':
+    case 'error':
+      return 'danger';
+    case 'cancelled':
+      return 'neutral';
+    default:
+      return 'neutral';
+  }
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
